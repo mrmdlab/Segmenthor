@@ -2,7 +2,6 @@
 
 ### IMPORTANT
 - encrypt software
-- control points shouldn't be affected by zoom or pan
 - save mask as `.nii.gz`
 - display segmentation volume
 - Segment Anything inference
@@ -20,6 +19,7 @@
 - to compute the image embedding takes a long time, but to predict is very fast. Maybe GPU is necessary
 
 ## changelog
+- control points shouldn't be affected by zoom or pan
 - fix bug: zoom out too much causes error
 - hotkey for change mode
 - display the current mode

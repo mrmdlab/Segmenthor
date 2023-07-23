@@ -168,7 +168,7 @@ class SAM4Med:
             # minus 4 because we want the center of point to be shown at where we click
             # instead of the upper left coner of the point to be shown at where we click
             # this value shall change when font size of control points changes (now 25)
-            pnt=np.array(event.pos)-4-self.loc_slice
+            pnt=(np.array(event.pos)-4-self.loc_slice)/self.resize_factor
             ctrlps.append(pnt)
             self.renderSlice()
 
@@ -196,10 +196,10 @@ class SAM4Med:
         font = pygame.font.Font(None, font_size)
         for i in range(len(self.pos_ctrlp)):
             mode = font.render("*", True, color[0])
-            self.screen.blit(mode,self.pos_ctrlp[i]+self.loc_slice)
+            self.screen.blit(mode,self.pos_ctrlp[i]*self.resize_factor+self.loc_slice) # related to appendCtrlPt()
         for i in range(len(self.neg_ctrlp)):
             mode = font.render("*", True, color[1])
-            self.screen.blit(mode,self.neg_ctrlp[i]+self.loc_slice)
+            self.screen.blit(mode,self.neg_ctrlp[i]*self.resize_factor+self.loc_slice)
 
 
     def pan(self):
@@ -212,7 +212,7 @@ class SAM4Med:
         if self.isRMBDown and hasattr(self,"data"):
             new_pos=pygame.mouse.get_pos()
             new_resize_factor=self.old_resize_factor+(self.old_mouse_pos[1]-new_pos[1])*0.01
-            if new_resize_factor>0.25: # can't be zoom out too much
+            if new_resize_factor>0.25: # can't be zoomed out too much
                 self.resize_factor=new_resize_factor
                 self.slc_size=(self.img_size*self.resize_factor)
 
