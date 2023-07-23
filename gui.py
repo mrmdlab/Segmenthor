@@ -3,8 +3,8 @@ import numpy as np
 import nibabel as nib
 import os
 from enum import Enum
-from segment_anything import SamPredictor, sam_model_registry
-
+from sam import predictor
+from threading import Thread
 
 class Mode(Enum):
     ZOOMPAN = "ZOOMPAN"
@@ -29,14 +29,17 @@ class SAM4Med:
         pygame.display.set_icon(icon)
 
         self.screen.fill("black")
-
         self.dispReminder("Drag one NIfTI file here to begin")
-        # self.initSAM()
         self.main()
 
     def main(self):
         #! Fix me: to remove
         self.test()
+
+        def set_image():
+            predictor.set_image(self.slc)
+            print("Image embedding has been computed")
+            self.renderSlice()
 
         running = True
         while running:
@@ -65,25 +68,39 @@ class SAM4Med:
                     case pygame.KEYDOWN:
                         if event.key == pygame.K_s:
                             self.mode = Mode.SEGMENT
+
+
+                            # ! Fix me:
+                            # ! shouldn't make it unresponsive when computing the image embedding
+                            # ! when scrolling through slices, should compute the embedding of new image (?)
+                            # ! shouldn't make the message disappear too early (add control points should be disabled by then)
+                            message="Computing the image embedding..."
+                            size=20
+                            offset=(0,self.window_size[1]/2-size-10)
+                            self.dispReminder(message,offset,size)
+                            Thread(target=set_image).start()
+
+
                         elif event.key == pygame.K_z:
                             self.mode = Mode.ZOOMPAN
                         self.renderMode()
+
             match self.mode:
                 case Mode.ZOOMPAN:
                     self.pan()
                     self.zoom()
                 case Mode.SEGMENT:
+                    # self.previewSegment()
                     pass
             pygame.display.flip()
 
         pygame.quit()
 
-    def initSAM(self):
-        #! Fix me: user choice
-        sam = sam_model_registry["vit_b"](checkpoint="checkpoints/sam_vit_b.pth")
-        predictor = SamPredictor(sam)
-        # predictor.set_image()
-        # masks, _, _ = predictor.predict()              
+
+    # def previewSegment(self):
+        # pos=np.array(pygame.mouse.get_pos())
+        # np.round((pos-4-self.loc_slice)/self.slc_size*self.img_size)
+        
 
     def loadImage(self,path:str):
         isPathValid = os.path.isfile(path) and (path.endswith(".nii") or path.endswith(".nii.gz"))
@@ -113,16 +130,18 @@ class SAM4Med:
             self.dispReminder("Please use a valid `.nii` or `.nii.gz` file!",offset=(0,30))          
 
 
-    def dispReminder(self,reminder,offset=(0,0)):
-        font = pygame.font.Font(None, size=30)
+    def dispReminder(self,reminder,offset=(0,0),size=30):
+        font = pygame.font.Font(None, size)
         color = "yellow"
         reminder = font.render(reminder, True, color)
         [width,height]=self.window_size
-        self.screen.blit(reminder,(round(width/3+offset[0]),
-                                   round(height/2+offset[1])))
+        self.screen.blit(reminder,(width/3+offset[0],
+                                   height/2+offset[1]))
 
 
     def renderSlice(self):  
+        # print("renderSlice")
+
         # when one of self.loc_slice, self.frame, self.slc_size, self.data changes
         # you should call this function
         def renderSliceNumber():
@@ -143,13 +162,18 @@ class SAM4Med:
             self.screen.fill("black")
 
         clearSlice()
-        slc = np.repeat(self.data[..., self.frame, None], 3, axis=2)  # ensure it's gray scale
-        slc = pygame.surfarray.make_surface(slc)
+
+        # ensure it's gray scale
+        # shape: (Height, Width, Channels)
+        self.slc = np.repeat(self.data[..., self.frame, None], 3, axis=2)
+        slc = pygame.surfarray.make_surface(self.slc)
         slc = pygame.transform.scale(slc, self.slc_size)
         self.screen.blit(slc, self.loc_slice)
+
+        # render other items on top
         renderSliceNumber()
         self.renderCtrlPts()
-        self.renderMode() # make sure Mode is displayed on top of image
+        self.renderMode()
 
 
     def throughSlices(self, event):
@@ -170,6 +194,9 @@ class SAM4Med:
             # this value shall change when font size of control points changes (now 25)
             pnt=(np.array(event.pos)-4-self.loc_slice)/self.resize_factor
             ctrlps.append(pnt)
+            
+            # it's necessary to render slice here instead of just rendering control points
+            # in case of removal of control points (undo)
             self.renderSlice()
 
         match event.button:
@@ -190,6 +217,8 @@ class SAM4Med:
 
 
     def renderCtrlPts(self):
+        # print("renderCtrlPts")
+
         # blue f"purple"or positive, purple for negative
         color = ["blue","purple"]
         font_size=25 # related to "minus 4" in appendCtrlPt()
@@ -200,7 +229,6 @@ class SAM4Med:
         for i in range(len(self.neg_ctrlp)):
             mode = font.render("*", True, color[1])
             self.screen.blit(mode,self.neg_ctrlp[i]*self.resize_factor+self.loc_slice)
-
 
     def pan(self):
         if self.isLMBDown and hasattr(self,"data"): # in case user clicks the window before an image is loaded
@@ -221,6 +249,7 @@ class SAM4Med:
                 self.renderSlice()
 
     def renderMode(self):
+        # print("renderMode")
         loc=(15,15)
         size=(120,20)
         font_size=20

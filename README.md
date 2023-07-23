@@ -1,19 +1,26 @@
 ## todo
 
 ### IMPORTANT
+- multiple threads
+- if computing image embedding takes too long, we can compute it in advance. ie. let it run overnight
+- display a reminder when it's computing the embedding of the image
+- display a message when predictor is ready (has initialized)
 - encrypt software
 - save mask as `.nii.gz`
 - display segmentation volume
 - Segment Anything inference
     - label points in different color to indicate positive and negative control points
+    - when there's neither positive nor negative control points, respond in real time
 
 ### OTHERS
+- why the message disappears when I click
 - undo
 - adjust brightness
 - correct orientation, label left, right, etc
 - deal with anisotropic pixels
 - cross hair
 - fix bug: if drag two files?
+- rotation of boundary box
 
 ## thoughts
 - to compute the image embedding takes a long time, but to predict is very fast. Maybe GPU is necessary
@@ -35,8 +42,16 @@ pip install opencv-python pycocotools matplotlib onnxruntime onnx
 ```
 
 ## Tutorial
+### models
+- ViT, vision transformer see [reference](http://arxiv.org/abs/2010.11929)
+- ViT-B, base model
+- ViT-L, large model
+- ViT-H, huge model
 
-### Change Mode
+### reminder
+- to use hotkey, don't use Chinese input method
+
+### Modes
 - S, change to SEGMENT Mode
 - Z, change to ZOOMPAN Mode
 ### ZOOMPAN
