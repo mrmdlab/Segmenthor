@@ -3,6 +3,7 @@ from sam import predictor
 import enums
 
 
+# def throughSlices(self:SAM4Med, event):
 def throughSlices(self, event):
     temp = -1
     if event.button == enums.WHEEL_UP:  # mouse wheel up
@@ -12,17 +13,18 @@ def throughSlices(self, event):
 
     if 0 <= temp < self.data.shape[2]:
         self.frame=temp
+        self.mask_instance=len(self.ctrlpnts[self.frame])-1
         self.renderSlice()
 
+# from gui import SAM4Med # For data type checking only, should be commented out
+# def hotkeys_mouse(self:SAM4Med, event):
 def hotkeys_mouse(self, event):
-    def appendCtrlPt(ctrlps:list):
+    def appendCtrlPnt(ctrlpnts:list):
         # minus 4 because we want the center of point to be shown at where we click
         # instead of the upper left coner of the point to be shown at where we click
         # this value shall change when font size of control points changes (now 25)
         pnt=(np.array(event.pos)-4-self.loc_slice)/self.resize_factor
-        ctrlps.append(pnt)
-
-        # TODO: maybe in another thread?
+        ctrlpnts.append(pnt)
         predictMask()
 
         # it's necessary to render slice here instead of just rendering control points
@@ -31,32 +33,35 @@ def hotkeys_mouse(self, event):
 
     def predictMask():
         # TODO: support more prompts, eg. bounding box 
+        pos_ctrlpnts=self.ctrlpnts[self.frame][self.mask_instance]["pos"]
+        neg_ctrlpnts=self.ctrlpnts[self.frame][self.mask_instance]["neg"]
+
         # mouse.pos() -> (Width,Height)
-        # input of predictor.predict() -> (Height,Width,Channels)                        
-        point_coords=np.array(self.pos_ctrlp+self.neg_ctrlp)[:,::-1]
-        point_labels=np.array([1]*len(self.pos_ctrlp)+[0]*len(self.neg_ctrlp))
+        # input of predictor.predict() -> (Height,Width,Channels)
+        point_coords=np.array(pos_ctrlpnts+neg_ctrlpnts)[:,::-1]
+        point_labels=np.array([1]*len(pos_ctrlpnts)+[0]*len(neg_ctrlpnts))
 
         # ! Fix me: maybe try iterative prediction?
         masks, scores, _ = predictor.predict(point_coords,
                                             point_labels)
-        #! Fix me: maybe not just the first mask
-        # TODO: maybe use the mask with the highest score?
         # TODO: test SAM in a jupyter notebook
         # test different model size
-        print(scores.max())            
-        self.masks[:,:,self.frame]=masks[scores.argmax()].astype(np.uint8)*128 # light red
+        print(scores.max())
+        # !Fix me: new way to save mask because now there may be mutiple mask instances
+        # can be solved with operation stack and undo
+        self.masks[:,:,self.frame]=masks[scores.argmax()].astype(np.uint8)
 
     match event.button:
-        case 1: # Left Mouse Button
-                            
+        case enums.LMB:
             # restrict user from adding control points before the image embedding is computed
             if self.mode == enums.SEGMENT and self.hasParsed[self.frame]:
-                appendCtrlPt(self.pos_ctrlp)
-        case 3:# RMB
+                appendCtrlPnt(self.ctrlpnts[self.frame][self.mask_instance]["pos"])
+        case enums.RMB:
             self.old_slc_size=self.slc_size.copy()
             self.old_resize_factor=self.resize_factor.copy()
             if self.mode == enums.SEGMENT and self.hasParsed[self.frame]:
-                appendCtrlPt(self.neg_ctrlp)
+                appendCtrlPnt(self.ctrlpnts[self.frame][self.mask_instance]["neg"])
+
 
     self.old_loc_slice=self.loc_slice.copy() # mind shallow copy, I made a mistake here
     self.old_mouse_pos=np.array(event.pos)

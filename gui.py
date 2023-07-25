@@ -16,16 +16,14 @@ class SAM4Med:
         self.window_size = np.array([800, 600])
 
         self.mask_alpha=90 # 0~255
-        self.mask_alpha_lct = 0 # last change time
+        self.mask_instance=0 # currently active mask
+        self.last_change_time={"mask_alpha":0,
+                               "mask_preview":0}
 
         self.BGCOLOR=(20,0,0)
         
         self.mode=enums.ZOOMPAN
         self.isKeyDown={} # eg. enums.LMB->True, pygame.K_s->False
-
-        # control points
-        self.pos_ctrlp=[]
-        self.neg_ctrlp=[]
 
         pygame.init()
         self.screen = pygame.display.set_mode(self.window_size)
@@ -75,6 +73,10 @@ class SAM4Med:
                     case pygame.KEYDOWN:
                         self.isKeyDown[event.key]=True
                         match event.key:
+                            case pygame.K_TAB:
+                                self.mask_instance+=1
+                                self.mask_instance%=len(self.mask_instance)
+
                             # !Fix me: maybe corporated into hotkeys.py
                             case pygame.K_z:
                                 self.mode = enums.ZOOMPAN
@@ -96,6 +98,7 @@ class SAM4Med:
 
             # Hotkeys for A, D
             # ! Fix me: hotkeys not working
+            # ! Fix me: change to self.last_change_time["mask_alpha"]
             # now = time.time()
             # if now-self.mask_alpha_lct > 0.2:
             #     self.mask_alpha_lct=now
@@ -120,18 +123,43 @@ class SAM4Med:
                     self.pan()
                     self.zoom()
                 case enums.SEGMENT:
-                    # TODO
-                    # self.previewSegment()
-                    pass
+                    # disable previewMask() when there has been one control point for the current active mask
+                    instance=self.ctrlpnts[self.frame][self.mask_instance]
+                    n_ctrlpnts=len(instance["pos"])+len(instance["neg"])
+                    # ensure the image embedding has been prepared
+                    if n_ctrlpnts==0 and self.hasParsed[self.frame]:
+                        self.previewMask()
             pygame.display.flip()
 
         pygame.quit()
 
 
-    def previewSegment(self):
-        # TODO
-        pos=np.array(pygame.mouse.get_pos())
-        np.round((pos-4-self.loc_slice)/self.slc_size*self.img_size)
+    def previewMask(self):
+        # can't do this too often. Limit at most twice per second
+        now=time.time()
+        if now-self.last_change_time["mask_preview"]>0.5:
+            self.last_change_time["mask_preview"]=now
+
+            # adapted from hotkeys.predictMask()
+            pos=np.array(pygame.mouse.get_pos())        
+            pos_ctrlpnts=[(pos-4-self.loc_slice)/self.resize_factor]
+            point_coords=np.array(pos_ctrlpnts)[:,::-1]
+            point_labels=np.array([1]*len(pos_ctrlpnts))
+            masks, scores, _ = predictor.predict(point_coords,
+                                                point_labels)
+            mask=masks[scores.argmax()].astype(np.uint8) # ndim=2
+
+            # adapted from renderMask()
+            mask = np.repeat(mask[...,None], 3, axis=2)
+            mask*=enums.RED
+            mask = pygame.surfarray.make_surface(mask)
+            mask = pygame.transform.scale(mask, self.slc_size)
+            mask.set_colorkey("black")
+            mask.set_alpha(self.mask_alpha)
+            self.renderSlice() # to clear the previous preview mask
+            self.screen.blit(mask, self.loc_slice)
+            # self.surf_slc.blit(mask,(0,0))
+            # for now, self.surf_slc is unusable
         
 
     def loadImage(self,path:str):
@@ -151,16 +179,35 @@ class SAM4Med:
 
             self.voxel_size=pixdim[1]*pixdim[2]*pixdim[3] # mm^3
 
-            self.frame = int((self.data.shape[2]-1)/2)
+            self.nframes=self.data.shape[2]
+            self.frame = int((self.nframes-1)/2)
+
+
+            # control points: dict = {frame : instances}
+            # instances: list = [inst1, inst2, ...] 
+            # inst1: dict = {"neg": pnts, "pos":pnts}
+            # pnts: list = [pnt1, pnt2, ...]
+            # pnt1: np.ndarray = (x1 ,y1)
+            
+            # self.ctrlpnts[self.frame][self.mask_instance]["pos"][4]
+            #     -> in the current frame, coordinates of the 5th positive control point:
+            # one instance represents one tumor, in case there are multiple tumors in one frame
+            # initialize control points
+            self.ctrlpnts={}
+            for i in range(self.nframes):
+                self.ctrlpnts[i]=[{
+                    "pos":[],
+                    "neg":[]
+                }]
 
             # whether the embedding of frames have been computed
-            self.hasParsed=np.zeros(self.data.shape[2])
+            self.hasParsed=np.zeros(self.nframes)
 
             # try to make slice size equal to 2/3 of the window size
             self.img_size=np.array(self.data.shape[:2])
             self.resize_factor=(self.window_size/self.img_size*2/3).min()
-            self.slc_size=(self.img_size*self.resize_factor)
-            
+            self.update_slc_size()
+
             # upper left corner of the slice to be rendered
             # make the slice in the center of the window
             # First declaration
@@ -169,6 +216,8 @@ class SAM4Med:
         else:
             self.dispReminder("Please use a valid `.nii` or `.nii.gz` file!",offset=(0,30))          
 
+    def update_slc_size(self):
+        self.slc_size=self.img_size*self.resize_factor
 
     def dispReminder(self,reminder,offset=(0,0),size=30):
         font = pygame.font.Font(None, size)
@@ -191,26 +240,29 @@ class SAM4Med:
                             height+self.loc_slice[1]+font_size/2)
             font = pygame.font.Font(None, font_size)
             color = "yellow"
-            slice_number = f"{(1+self.frame)}/{self.data.shape[2]}"
+            slice_number = f"{(1+self.frame)}/{self.nframes}"
             slice_number = font.render(slice_number, True, color)
             # erase old slice number
             pygame.draw.rect(self.screen, self.BGCOLOR, (self.loc_slice[0],self.loc_slice[1]+height,width,font_size+10))
             self.screen.blit(slice_number,loc_slc_number)
 
-        def renderCtrlPts():
-            # blue f"purple"or positive, purple for negative
-            color = ["blue","purple"]
-            font_size=25 # related to "minus 4" in appendCtrlPt()
+        def renderCtrlPnts():
+            color = {"pos":"blue",
+                     "neg":"purple"}
+            font_size=25 # related to "minus 4" in appendCtrlPnt()
             font = pygame.font.Font(None, font_size)
-            for j,points in enumerate([self.pos_ctrlp, self.neg_ctrlp]):
-                for i in range(len(points)):
-                    mode = font.render("*", True, color[j])
-                    # related to appendCtrlPt()
-                    self.screen.blit(mode,points[i]*self.resize_factor+self.loc_slice)
+            for instance in self.ctrlpnts[self.frame]:
+                for key in ["pos", "neg"]:
+                    for point in instance[key]:
+                        mode = font.render("*", True, color[key])
+                        # related to appendCtrlPnt()
+                        # TODO: refactor:
+                        # control points should be rendered on the Surface object of the current slice
+                        self.screen.blit(mode,point*self.resize_factor+self.loc_slice)
         
         def renderMask():
             slc = np.repeat(self.masks[..., self.frame, None], 3, axis=2)
-            slc[:,:,1:]=0 # light red
+            slc*=enums.RED
             slc = pygame.surfarray.make_surface(slc)
             slc = pygame.transform.scale(slc, self.slc_size)
             slc.set_colorkey("black") # any black color will be transparent
@@ -218,7 +270,7 @@ class SAM4Med:
             self.screen.blit(slc, self.loc_slice)
 
         def clearSlice():
-            # pygame.draw.rect(self.screen, self.BGCOLOR, (self.loc_slice,self.slc_size))
+            # self.surf_slc.fill(self.BGCOLOR)
             self.screen.fill(self.BGCOLOR)
 
         clearSlice()
@@ -226,14 +278,14 @@ class SAM4Med:
         # ensure it's gray scale
         # shape: (Height, Width, Channels)
         self.slc = np.repeat(self.data[..., self.frame, None], 3, axis=2)
-        slc = pygame.surfarray.make_surface(self.slc)
-        slc = pygame.transform.scale(slc, self.slc_size)
-        self.screen.blit(slc, self.loc_slice)
+        self.surf_slc = pygame.surfarray.make_surface(self.slc)
+        self.surf_slc = pygame.transform.scale(self.surf_slc, self.slc_size)
+        self.screen.blit(self.surf_slc, self.loc_slice)
 
         # render other items on top
         renderMask()
         renderSliceNumber()
-        renderCtrlPts()
+        renderCtrlPnts()
         self.renderMode()
 
     def pan(self):
@@ -248,7 +300,7 @@ class SAM4Med:
             new_resize_factor=self.old_resize_factor+(self.old_mouse_pos[1]-new_pos[1])*0.01
             if new_resize_factor>0.25: # can't be zoomed out too much
                 self.resize_factor=new_resize_factor
-                self.slc_size=(self.img_size*self.resize_factor)
+                self.update_slc_size()
 
                 # keep the center pixel at the same location
                 self.loc_slice=self.old_loc_slice+self.old_slc_size/2-self.slc_size/2
