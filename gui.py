@@ -2,21 +2,26 @@ import pygame
 import numpy as np
 import nibabel as nib
 import os
-from enum import Enum
-from sam import predictor
 from threading import Thread
+import time
 
-class Mode(Enum):
-    ZOOMPAN = "ZOOMPAN"
-    SEGMENT = "SEGMENT"
+from sam import predictor
+import enums
+import hotkeys
+
 
 class SAM4Med:
     def __init__(self):
         #! Fix me: better windows size
         self.window_size = np.array([800, 600])
-        self.mode=Mode.ZOOMPAN
-        self.isLMBDown=False
-        self.isRMBDown=False
+
+        self.mask_alpha=90 # 0~255
+        self.mask_alpha_lct = 0 # last change time
+
+        self.BGCOLOR=(20,0,0)
+        
+        self.mode=enums.ZOOMPAN
+        self.isKeyDown={} # eg. enums.LMB->True, pygame.K_s->False
 
         # control points
         self.pos_ctrlp=[]
@@ -28,7 +33,7 @@ class SAM4Med:
         icon = pygame.image.load("icon.jpg")
         pygame.display.set_icon(icon)
 
-        self.screen.fill("black")
+        self.screen.fill(self.BGCOLOR)
         self.dispReminder("Drag one NIfTI file here to begin")
         self.main()
 
@@ -39,6 +44,7 @@ class SAM4Med:
         def set_image():
             predictor.set_image(self.slc)
             print("Image embedding has been computed")
+            self.hasParsed[self.frame]=1
             self.renderSlice()
 
         running = True
@@ -49,47 +55,72 @@ class SAM4Med:
                         running = False
 
                     case pygame.MOUSEBUTTONUP:
-                        if event.button ==1:
-                            self.isLMBDown=False
-                        elif event.button ==3:
-                            self.isRMBDown=False
+                        self.isKeyDown[event.button]=False
 
                     case pygame.MOUSEBUTTONDOWN:
+                        self.isKeyDown[event.button]=True
                         if event.button in [4,5]: # mouse wheel
-                            self.throughSlices(event)
+                            hotkeys.throughSlices(self,event)
                         elif event.button in [1,3]: # LMB, RMB
-                            self._getMousePos(event)
+                            hotkeys.hotkeys_mouse(self,event)
 
                     case pygame.DROPFILE:
                         path = event.file
                         print("file path:", path)
                         self.loadImage(path)
 
+                    case pygame.KEYUP:
+                        self.isKeyDown[event.key]=False
+
                     case pygame.KEYDOWN:
-                        if event.key == pygame.K_s:
-                            self.mode = Mode.SEGMENT
+                        self.isKeyDown[event.key]=True
+                        match event.key:
+                            # !Fix me: maybe corporated into hotkeys.py
+                            case pygame.K_z:
+                                self.mode = enums.ZOOMPAN
+                            case pygame.K_s:
+                                self.mode = enums.SEGMENT
 
-
-                            # ! Fix me:
-                            # ! shouldn't make it unresponsive when computing the image embedding
-                            # ! when scrolling through slices, should compute the embedding of new image (?)
-                            # ! shouldn't make the message disappear too early (add control points should be disabled by then)
-                            message="Computing the image embedding..."
-                            size=20
-                            offset=(0,self.window_size[1]/2-size-10)
-                            self.dispReminder(message,offset,size)
-                            Thread(target=set_image).start()
-
-
-                        elif event.key == pygame.K_z:
-                            self.mode = Mode.ZOOMPAN
+                                # ! Fix me:
+                                # ! shouldn't make it unresponsive when computing the image embedding
+                                # ! when scrolling through slices, should compute the embedding of new image (?)
+                                # ! shouldn't make the message disappear too early (add control points should be disabled by then)
+                                # ! should make a new function: renderMessage() and call it in renderSlice()
+                                message="Computing the image embedding..."
+                                size=20
+                                offset=(0,self.window_size[1]/2-size-10)
+                                self.dispReminder(message,offset,size)
+                                Thread(target=set_image).start()
+                            
                         self.renderMode()
 
+            # Hotkeys for A, D
+            # ! Fix me: hotkeys not working
+            # now = time.time()
+            # if now-self.mask_alpha_lct > 0.2:
+            #     self.mask_alpha_lct=now
+            #     # print("D")
+            #     print(keys[pygame.K_d])
+            # if keys[pygame.K_d]:
+            #     now = time.time()
+            #     print("D")
+            #     # in one second, value changes at most 5
+            #     if now-self.mask_alpha_lct > 0.2 and self.mask_alpha+1<=255:
+            #         self.mask_alpha += 1
+                    # self.mask_alpha_lct=now
+            # elif keys[pygame.K_a]:
+            #     print("A")
+            #     now = time.time()
+            #     if now-self.mask_alpha_lct > 0.2 and self.mask_alpha-1>=0:
+            #         self.mask_alpha -= 1
+            #         self.mask_alpha_lct=now
+
             match self.mode:
-                case Mode.ZOOMPAN:
+                case enums.ZOOMPAN:
                     self.pan()
                     self.zoom()
-                case Mode.SEGMENT:
+                case enums.SEGMENT:
+                    # TODO
                     # self.previewSegment()
                     pass
             pygame.display.flip()
@@ -97,24 +128,33 @@ class SAM4Med:
         pygame.quit()
 
 
-    # def previewSegment(self):
-        # pos=np.array(pygame.mouse.get_pos())
-        # np.round((pos-4-self.loc_slice)/self.slc_size*self.img_size)
+    def previewSegment(self):
+        # TODO
+        pos=np.array(pygame.mouse.get_pos())
+        np.round((pos-4-self.loc_slice)/self.slc_size*self.img_size)
         
 
     def loadImage(self,path:str):
         isPathValid = os.path.isfile(path) and (path.endswith(".nii") or path.endswith(".nii.gz"))
             
         if isPathValid:
-            self.screen.fill("black")
+            self.screen.fill(self.BGCOLOR)
 
             img = nib.load(path)
             data = img.get_fdata()
             datamin = data.min()
             datamax = data.max()
             self.data = np.round((data - datamin) / (datamax - datamin) * 255).astype(np.uint8)
+            self.masks=np.zeros_like(self.data, dtype=np.uint8)
             self.header = img.header
+            pixdim=self.header.get("pixdim")
+
+            self.voxel_size=pixdim[1]*pixdim[2]*pixdim[3] # mm^3
+
             self.frame = int((self.data.shape[2]-1)/2)
+
+            # whether the embedding of frames have been computed
+            self.hasParsed=np.zeros(self.data.shape[2])
 
             # try to make slice size equal to 2/3 of the window size
             self.img_size=np.array(self.data.shape[:2])
@@ -154,12 +194,32 @@ class SAM4Med:
             slice_number = f"{(1+self.frame)}/{self.data.shape[2]}"
             slice_number = font.render(slice_number, True, color)
             # erase old slice number
-            pygame.draw.rect(self.screen, "black", (self.loc_slice[0],self.loc_slice[1]+height,width,font_size+10))
+            pygame.draw.rect(self.screen, self.BGCOLOR, (self.loc_slice[0],self.loc_slice[1]+height,width,font_size+10))
             self.screen.blit(slice_number,loc_slc_number)
 
+        def renderCtrlPts():
+            # blue f"purple"or positive, purple for negative
+            color = ["blue","purple"]
+            font_size=25 # related to "minus 4" in appendCtrlPt()
+            font = pygame.font.Font(None, font_size)
+            for j,points in enumerate([self.pos_ctrlp, self.neg_ctrlp]):
+                for i in range(len(points)):
+                    mode = font.render("*", True, color[j])
+                    # related to appendCtrlPt()
+                    self.screen.blit(mode,points[i]*self.resize_factor+self.loc_slice)
+        
+        def renderMask():
+            slc = np.repeat(self.masks[..., self.frame, None], 3, axis=2)
+            slc[:,:,1:]=0 # light red
+            slc = pygame.surfarray.make_surface(slc)
+            slc = pygame.transform.scale(slc, self.slc_size)
+            slc.set_colorkey("black") # any black color will be transparent
+            slc.set_alpha(self.mask_alpha)
+            self.screen.blit(slc, self.loc_slice)
+
         def clearSlice():
-            # pygame.draw.rect(self.screen, "black", (self.loc_slice,self.slc_size))
-            self.screen.fill("black")
+            # pygame.draw.rect(self.screen, self.BGCOLOR, (self.loc_slice,self.slc_size))
+            self.screen.fill(self.BGCOLOR)
 
         clearSlice()
 
@@ -171,73 +231,19 @@ class SAM4Med:
         self.screen.blit(slc, self.loc_slice)
 
         # render other items on top
+        renderMask()
         renderSliceNumber()
-        self.renderCtrlPts()
+        renderCtrlPts()
         self.renderMode()
 
-
-    def throughSlices(self, event):
-        temp = -1
-        if event.button == 4:  # mouse wheel up
-            temp = self.frame + 1
-        elif event.button == 5:  # mouse wheel down
-            temp = self.frame - 1
-
-        if 0 <= temp < self.data.shape[2]:
-            self.frame=temp
-            self.renderSlice()
-
-    def _getMousePos(self,event):
-        def appendCtrlPt(ctrlps):
-            # minus 4 because we want the center of point to be shown at where we click
-            # instead of the upper left coner of the point to be shown at where we click
-            # this value shall change when font size of control points changes (now 25)
-            pnt=(np.array(event.pos)-4-self.loc_slice)/self.resize_factor
-            ctrlps.append(pnt)
-            
-            # it's necessary to render slice here instead of just rendering control points
-            # in case of removal of control points (undo)
-            self.renderSlice()
-
-        match event.button:
-            case 1: # Left Mouse Button
-                self.isLMBDown=True
-                if self.mode == Mode.SEGMENT:
-                    appendCtrlPt(self.pos_ctrlp)
-            case 3:# RMB
-                self.isRMBDown=True
-                self.old_slc_size=self.slc_size.copy()
-                self.old_resize_factor=self.resize_factor.copy()
-                if self.mode == Mode.SEGMENT:
-                    appendCtrlPt(self.neg_ctrlp)
-
-        self.old_loc_slice=self.loc_slice.copy() # mind shallow copy, I made a mistake here
-        self.old_mouse_pos=np.array(event.pos)
-        print("Mouse position:", event.pos)
-
-
-    def renderCtrlPts(self):
-        # print("renderCtrlPts")
-
-        # blue f"purple"or positive, purple for negative
-        color = ["blue","purple"]
-        font_size=25 # related to "minus 4" in appendCtrlPt()
-        font = pygame.font.Font(None, font_size)
-        for i in range(len(self.pos_ctrlp)):
-            mode = font.render("*", True, color[0])
-            self.screen.blit(mode,self.pos_ctrlp[i]*self.resize_factor+self.loc_slice) # related to appendCtrlPt()
-        for i in range(len(self.neg_ctrlp)):
-            mode = font.render("*", True, color[1])
-            self.screen.blit(mode,self.neg_ctrlp[i]*self.resize_factor+self.loc_slice)
-
     def pan(self):
-        if self.isLMBDown and hasattr(self,"data"): # in case user clicks the window before an image is loaded
+        if self.isKeyDown.get(enums.LMB) and hasattr(self,"data"): # in case user clicks the window before an image is loaded
             new_pos=np.array(pygame.mouse.get_pos())
             self.loc_slice=self.old_loc_slice+new_pos-self.old_mouse_pos
             self.renderSlice()
     
     def zoom(self):
-        if self.isRMBDown and hasattr(self,"data"):
+        if self.isKeyDown.get(enums.RMB) and hasattr(self,"data"):
             new_pos=pygame.mouse.get_pos()
             new_resize_factor=self.old_resize_factor+(self.old_mouse_pos[1]-new_pos[1])*0.01
             if new_resize_factor>0.25: # can't be zoomed out too much
@@ -255,9 +261,9 @@ class SAM4Med:
         font_size=20
         font = pygame.font.Font(None, font_size)
         color = "yellow"
-        text=f"Mode: {self.mode.value}"
+        text=f"Mode: {self.mode}"
         mode = font.render(text, True, color)
-        pygame.draw.rect(self.screen, "black", (loc,size))
+        pygame.draw.rect(self.screen, self.BGCOLOR, (loc,size))
         self.screen.blit(mode,loc)
 
     def test(self):
