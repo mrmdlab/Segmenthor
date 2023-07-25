@@ -1,6 +1,7 @@
 ## todo
 
 ### IMPORTANT
+- Fix bug: when going to SEGMENT, then ZOOMPAN, then SEGMENT again, shouldn't compute embedding twice
 - display segmentation volume
 - Fix bug: initialize a `mask_instance` when pressing `S`
 - display a message to indicate:
@@ -70,6 +71,7 @@
 - to compute the image embedding takes a long time, but to predict is very fast. Maybe GPU is necessary
 
 ## changelog
+- refactor: separate keyboard events into hotkeys.py
 - Fix bug: should display all mask instances
 - Fix bug: Tab doesn't change color of masks immediatelly
 - Fix bug: Press Tab when it's in previewMask(), the temporary mask will stay there

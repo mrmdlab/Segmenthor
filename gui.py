@@ -2,7 +2,6 @@ import pygame
 import numpy as np
 import nibabel as nib
 import os
-from threading import Thread
 import time
 
 from sam import predictor
@@ -39,16 +38,6 @@ class SAM4Med:
         #! Fix me: to remove
         self.test()
 
-        # I'm surprised that python supports variable as default parameter for function
-        def get_nctrlpnts(inst):
-            instance=self.ctrlpnts[self.frame][inst]
-            return len(instance["pos"])+len(instance["neg"])
-
-        def set_image():
-            predictor.set_image(self.slc)
-            print("Image embedding has been computed")
-            self.hasParsed[self.frame]=1
-            self.renderSlice()
 
         running = True
         while running:
@@ -77,41 +66,7 @@ class SAM4Med:
 
                     case pygame.KEYDOWN:
                         self.isKeyDown[event.key]=True
-                        match event.key:
-                            case pygame.K_TAB:
-                                self.mask_instance+=1
-                                self.mask_instance%=len(self.ctrlpnts[self.frame])
-                                self.renderSlice()
-                            case pygame.K_SPACE:
-                                if get_nctrlpnts(-1)>0:
-                                    self.mask_instance+=1
-                                    self.ctrlpnts[self.frame].append({
-                                        "pos":[],
-                                        "neg":[]
-                                    })
-                                else:
-                                    # if the newly created mask hasn't been confirmed
-                                    # switch to it rather than create one more new mask
-                                    self.mask_instance=len(self.ctrlpnts[self.frame])-1
-
-
-                            # !Fix me: maybe corporated into hotkeys.py
-                            case pygame.K_z:
-                                self.mode = enums.ZOOMPAN
-                            case pygame.K_s:
-                                self.mode = enums.SEGMENT
-
-                                # ! Fix me:
-                                # ! shouldn't make it unresponsive when computing the image embedding
-                                # ! shouldn't make the message disappear too early (add control points should be disabled by then)
-                                # ! should make a new function: renderMessage() and call it in renderSlice()
-                                message="Computing the image embedding..."
-                                size=20
-                                offset=(0,self.window_size[1]/2-size-10)
-                                self.dispReminder(message,offset,size)
-                                Thread(target=set_image).start()
-                            
-                        self.renderMode()
+                        hotkeys.hotkeys_keyboard(self,event)
 
             # Hotkeys for A, D
             # ! Fix me: hotkeys not working
@@ -142,7 +97,7 @@ class SAM4Med:
                 case enums.SEGMENT:
                     # disable previewMask() when there has been one control point for the current active mask
                     # ensure the image embedding has been prepared
-                    if get_nctrlpnts(self.mask_instance)==0 and self.hasParsed[self.frame]:
+                    if self.get_nctrlpnts(self.mask_instance)==0 and self.hasParsed[self.frame]:
                         self.previewMask()
             pygame.display.flip()
 
@@ -351,6 +306,12 @@ class SAM4Med:
         mode = font.render(text, True, color)
         pygame.draw.rect(self.screen, self.BGCOLOR, (loc,size))
         self.screen.blit(mode,loc)
+
+    # I'm surprised that python supports variable as default parameter for function
+    def get_nctrlpnts(self, inst):
+        instance=self.ctrlpnts[self.frame][inst]
+        return len(instance["pos"])+len(instance["neg"])
+
 
     def test(self):
         self.loadImage(r"C:\Projects\SAM4Med\data\test_project\sub-mrmdCrown_Hep3bLuc_11\ses-iv05\anat\sub-mrmdCrown_Hep3bLuc_11_ses-iv05_acq-TurboRARECoronal_T2w.nii.gz")

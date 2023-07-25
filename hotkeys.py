@@ -1,6 +1,8 @@
 import numpy as np
 from sam import predictor
 import enums
+import pygame
+from threading import Thread
 
 
 # def throughSlices(self:SAM4Med, event):
@@ -15,6 +17,43 @@ def throughSlices(self, event):
         self.frame=temp
         self.mask_instance=len(self.ctrlpnts[self.frame])-1
         self.renderSlice()
+
+def hotkeys_keyboard(self,event):
+    match event.key:
+        case pygame.K_TAB:
+            if self.mode==enums.SEGMENT:
+                self.mask_instance+=1
+                self.mask_instance%=len(self.ctrlpnts[self.frame])
+                self.renderSlice()
+        case pygame.K_SPACE:
+            if self.mode==enums.SEGMENT:
+                if self.get_nctrlpnts(-1)>0:
+                    self.mask_instance+=1
+                    self.ctrlpnts[self.frame].append({
+                        "pos":[],
+                        "neg":[]
+                    })
+                else:
+                    # if the newly created mask hasn't been confirmed
+                    # switch to it rather than create one more new mask
+                    self.mask_instance=len(self.ctrlpnts[self.frame])-1
+
+        case pygame.K_z:
+            self.mode = enums.ZOOMPAN
+        case pygame.K_s:
+            self.mode = enums.SEGMENT
+
+            # ! Fix me:
+            # ! shouldn't make the message disappear too early
+            # ! should make a new function: renderMessage() and call it in renderSlice()
+            message="Computing the image embedding..."
+            size=20
+            offset=(0,self.window_size[1]/2-size-10)
+            self.dispReminder(message,offset,size)
+            Thread(target=set_image,args=(self,)).start()
+        
+    self.renderMode()
+
 
 # from gui import SAM4Med # For data type checking only, should be commented out
 # def hotkeys_mouse(self:SAM4Med, event):
@@ -68,3 +107,9 @@ def hotkeys_mouse(self, event):
     self.old_loc_slice=self.loc_slice.copy() # mind shallow copy, I made a mistake here
     self.old_mouse_pos=np.array(event.pos)
     print("Mouse position:", event.pos)
+
+def set_image(self):
+    predictor.set_image(self.slc)
+    print("Image embedding has been computed")
+    self.hasParsed[self.frame]=1
+    
