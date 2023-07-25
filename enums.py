@@ -9,4 +9,4 @@ WHEEL_UP=4
 WHEEL_DOWN=5
 
 RED=np.array((128,0,0)).astype(np.uint8) # light red
-BLUE=np.array((0,128,9)).astype(np.uint8) # light blue
+GREEN=np.array((0,128,0)).astype(np.uint8) # light green

@@ -39,6 +39,11 @@ class SAM4Med:
         #! Fix me: to remove
         self.test()
 
+        # I'm surprised that python supports variable as default parameter for function
+        def get_nctrlpnts(inst):
+            instance=self.ctrlpnts[self.frame][inst]
+            return len(instance["pos"])+len(instance["neg"])
+
         def set_image():
             predictor.set_image(self.slc)
             print("Image embedding has been computed")
@@ -75,7 +80,20 @@ class SAM4Med:
                         match event.key:
                             case pygame.K_TAB:
                                 self.mask_instance+=1
-                                self.mask_instance%=len(self.mask_instance)
+                                self.mask_instance%=len(self.ctrlpnts[self.frame])
+                                self.renderSlice()
+                            case pygame.K_SPACE:
+                                if get_nctrlpnts(-1)>0:
+                                    self.mask_instance+=1
+                                    self.ctrlpnts[self.frame].append({
+                                        "pos":[],
+                                        "neg":[]
+                                    })
+                                else:
+                                    # if the newly created mask hasn't been confirmed
+                                    # switch to it rather than create one more new mask
+                                    self.mask_instance=len(self.ctrlpnts[self.frame])-1
+
 
                             # !Fix me: maybe corporated into hotkeys.py
                             case pygame.K_z:
@@ -85,7 +103,6 @@ class SAM4Med:
 
                                 # ! Fix me:
                                 # ! shouldn't make it unresponsive when computing the image embedding
-                                # ! when scrolling through slices, should compute the embedding of new image (?)
                                 # ! shouldn't make the message disappear too early (add control points should be disabled by then)
                                 # ! should make a new function: renderMessage() and call it in renderSlice()
                                 message="Computing the image embedding..."
@@ -124,10 +141,8 @@ class SAM4Med:
                     self.zoom()
                 case enums.SEGMENT:
                     # disable previewMask() when there has been one control point for the current active mask
-                    instance=self.ctrlpnts[self.frame][self.mask_instance]
-                    n_ctrlpnts=len(instance["pos"])+len(instance["neg"])
                     # ensure the image embedding has been prepared
-                    if n_ctrlpnts==0 and self.hasParsed[self.frame]:
+                    if get_nctrlpnts(self.mask_instance)==0 and self.hasParsed[self.frame]:
                         self.previewMask()
             pygame.display.flip()
 
@@ -173,7 +188,6 @@ class SAM4Med:
             datamin = data.min()
             datamax = data.max()
             self.data = np.round((data - datamin) / (datamax - datamin) * 255).astype(np.uint8)
-            self.masks=np.zeros_like(self.data, dtype=np.uint8)
             self.header = img.header
             pixdim=self.header.get("pixdim")
 
@@ -192,13 +206,23 @@ class SAM4Med:
             # self.ctrlpnts[self.frame][self.mask_instance]["pos"][4]
             #     -> in the current frame, coordinates of the 5th positive control point:
             # one instance represents one tumor, in case there are multiple tumors in one frame
-            # initialize control points
+
+            # maks:dict= {frame:instances}
+            # instances:list=[inst1, inst2, ...]
+            # inst1:np.ndarray, ndim=2, dtype=uint8, element value = 1 or 0
+            #
+            # every mask corresponds to one particular mask_instance
+            #       and one set of positive and negative control points
+            self.masks={}
             self.ctrlpnts={}
             for i in range(self.nframes):
                 self.ctrlpnts[i]=[{
                     "pos":[],
                     "neg":[]
                 }]
+                
+                self.masks[i]=[]
+
 
             # whether the embedding of frames have been computed
             self.hasParsed=np.zeros(self.nframes)
@@ -219,12 +243,16 @@ class SAM4Med:
     def update_slc_size(self):
         self.slc_size=self.img_size*self.resize_factor
 
-    def dispReminder(self,reminder,offset=(0,0),size=30):
+    # display a message in bottom of the screen
+    def dispReminder(self,msg,offset=(0,0),size=30):
+        # TODO:
+        # def clearRemider()
+        # when absolute location is provided, ignore `offset`
         font = pygame.font.Font(None, size)
         color = "yellow"
-        reminder = font.render(reminder, True, color)
+        msg = font.render(msg, True, color)
         [width,height]=self.window_size
-        self.screen.blit(reminder,(width/3+offset[0],
+        self.screen.blit(msg,(width/3+offset[0],
                                    height/2+offset[1]))
 
 
@@ -261,13 +289,19 @@ class SAM4Med:
                         self.screen.blit(mode,point*self.resize_factor+self.loc_slice)
         
         def renderMask():
-            slc = np.repeat(self.masks[..., self.frame, None], 3, axis=2)
-            slc*=enums.RED
-            slc = pygame.surfarray.make_surface(slc)
-            slc = pygame.transform.scale(slc, self.slc_size)
-            slc.set_colorkey("black") # any black color will be transparent
-            slc.set_alpha(self.mask_alpha)
-            self.screen.blit(slc, self.loc_slice)
+            for i,mask in enumerate(self.masks[self.frame]):
+                slc = np.repeat(mask[...,None], 3, axis=2)
+                # inactive mask: green
+                #   active mask: red
+                if self.mask_instance==i:
+                    slc*=enums.RED
+                else:
+                    slc*=enums.GREEN
+                slc = pygame.surfarray.make_surface(slc)
+                slc = pygame.transform.scale(slc, self.slc_size)
+                slc.set_colorkey("black") # any black color will be transparent
+                slc.set_alpha(self.mask_alpha)
+                self.screen.blit(slc, self.loc_slice)
 
         def clearSlice():
             # self.surf_slc.fill(self.BGCOLOR)

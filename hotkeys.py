@@ -42,14 +42,16 @@ def hotkeys_mouse(self, event):
         point_labels=np.array([1]*len(pos_ctrlpnts)+[0]*len(neg_ctrlpnts))
 
         # ! Fix me: maybe try iterative prediction?
-        masks, scores, _ = predictor.predict(point_coords,
+        predicted_masks, scores, _ = predictor.predict(point_coords,
                                             point_labels)
-        # TODO: test SAM in a jupyter notebook
-        # test different model size
-        print(scores.max())
-        # !Fix me: new way to save mask because now there may be mutiple mask instances
-        # can be solved with operation stack and undo
-        self.masks[:,:,self.frame]=masks[scores.argmax()].astype(np.uint8)
+        predicted_mask=predicted_masks[scores.argmax()].astype(np.uint8)
+        print("mask quality: ",scores.max())
+
+        my_masks=self.masks[self.frame]
+        if len(my_masks)>self.mask_instance:
+            my_masks[self.mask_instance]=predicted_mask
+        else:
+            my_masks.append(predicted_mask)
 
     match event.button:
         case enums.LMB:
