@@ -71,6 +71,8 @@
 - to compute the image embedding takes a long time, but to predict is very fast. Maybe GPU is necessary
 
 ## changelog
+- refactor: reuse font object
+- change function name: dispReminder()->dispMsg()
 - refactor: separate keyboard events into hotkeys.py
 - Fix bug: should display all mask instances
 - Fix bug: Tab doesn't change color of masks immediatelly

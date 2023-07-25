@@ -47,9 +47,8 @@ def hotkeys_keyboard(self,event):
             # ! shouldn't make the message disappear too early
             # ! should make a new function: renderMessage() and call it in renderSlice()
             message="Computing the image embedding..."
-            size=20
-            offset=(0,self.window_size[1]/2-size-10)
-            self.dispReminder(message,offset,size)
+            offset=(0,self.window_size[1]/2-self.msg_font_size-10) # distance from the bottom: size+10
+            self.dispMsg(message,offset)
             Thread(target=set_image,args=(self,)).start()
         
     self.renderMode()

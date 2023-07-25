@@ -11,8 +11,26 @@ import hotkeys
 
 class SAM4Med:
     def __init__(self):
+        pygame.init()
+
         #! Fix me: better windows size
         self.window_size = np.array([800, 600])
+
+        # set up parameters of panel
+        self.panel_size=(120,20) # (width, height)
+        self.panel_dests={
+            "mode":(15*1,15),
+            "volume":(15*11,15)
+        }
+        self.panel_color = "yellow"
+        self.surf_mode=pygame.Surface(self.panel_size)
+        
+        self.panel_font_size=20
+        self.panel_font=pygame.font.Font(None, self.panel_font_size)
+        self.msg_font_size=30
+        self.msg_font = pygame.font.Font(None, self.msg_font_size)
+        self.ctrlpnt_font = pygame.font.Font(None, size=25) # size=25 is related to "minus 4" in hotkeys.appendCtrlPnt()
+
 
         self.mask_alpha=90 # 0~255
         self.mask_instance=0 # currently active mask
@@ -24,14 +42,13 @@ class SAM4Med:
         self.mode=enums.ZOOMPAN
         self.isKeyDown={} # eg. enums.LMB->True, pygame.K_s->False
 
-        pygame.init()
         self.screen = pygame.display.set_mode(self.window_size)
         pygame.display.set_caption("SAM4Med")
         icon = pygame.image.load("icon.jpg")
         pygame.display.set_icon(icon)
 
         self.screen.fill(self.BGCOLOR)
-        self.dispReminder("Drag one NIfTI file here to begin")
+        self.dispMsg("Drag one NIfTI file here to begin")
         self.main()
 
     def main(self):
@@ -193,22 +210,21 @@ class SAM4Med:
             self.loc_slice: np.ndarray =(self.window_size/2-self.slc_size/2)
             self.renderSlice()
         else:
-            self.dispReminder("Please use a valid `.nii` or `.nii.gz` file!",offset=(0,30))          
+            self.dispMsg("Please use a valid `.nii` or `.nii.gz` file!",offset=(0,30))          
 
     def update_slc_size(self):
         self.slc_size=self.img_size*self.resize_factor
 
     # display a message in bottom of the screen
-    def dispReminder(self,msg,offset=(0,0),size=30):
+    def dispMsg(self,msg,offset=(0,0)):
         # TODO:
         # def clearRemider()
         # when absolute location is provided, ignore `offset`
-        font = pygame.font.Font(None, size)
-        color = "yellow"
-        msg = font.render(msg, True, color)
+        msg = self.msg_font.render(msg, True, self.panel_color)
         [width,height]=self.window_size
-        self.screen.blit(msg,(width/3+offset[0],
-                                   height/2+offset[1]))
+        self.screen.blit(msg,
+                         (width/3+offset[0],
+                          height/2+offset[1]))
 
 
     def renderSlice(self):  
@@ -218,13 +234,12 @@ class SAM4Med:
         # you should call this function
         def renderSliceNumber():
             [width,height]=self.slc_size
-            font_size=20
+            font_size=20 # should be the same as self.panel_font
             loc_slc_number=(width/2+self.loc_slice[0],
                             height+self.loc_slice[1]+font_size/2)
-            font = pygame.font.Font(None, font_size)
             color = "yellow"
             slice_number = f"{(1+self.frame)}/{self.nframes}"
-            slice_number = font.render(slice_number, True, color)
+            slice_number = self.panel_font.render(slice_number, True, color)
             # erase old slice number
             pygame.draw.rect(self.screen, self.BGCOLOR, (self.loc_slice[0],self.loc_slice[1]+height,width,font_size+10))
             self.screen.blit(slice_number,loc_slc_number)
@@ -232,12 +247,10 @@ class SAM4Med:
         def renderCtrlPnts():
             color = {"pos":"blue",
                      "neg":"purple"}
-            font_size=25 # related to "minus 4" in appendCtrlPnt()
-            font = pygame.font.Font(None, font_size)
             for instance in self.ctrlpnts[self.frame]:
                 for key in ["pos", "neg"]:
                     for point in instance[key]:
-                        mode = font.render("*", True, color[key])
+                        mode = self.ctrlpnt_font.render("*", True, color[key])
                         # related to appendCtrlPnt()
                         # TODO: refactor:
                         # control points should be rendered on the Surface object of the current slice
@@ -296,16 +309,11 @@ class SAM4Med:
                 self.renderSlice()
 
     def renderMode(self):
-        # print("renderMode")
-        loc=(15,15)
-        size=(120,20)
-        font_size=20
-        font = pygame.font.Font(None, font_size)
-        color = "yellow"
         text=f"Mode: {self.mode}"
-        mode = font.render(text, True, color)
-        pygame.draw.rect(self.screen, self.BGCOLOR, (loc,size))
-        self.screen.blit(mode,loc)
+        text = self.panel_font.render(text, True, self.panel_color)
+        self.surf_mode.fill(self.BGCOLOR)
+        self.surf_mode.blit(text,(0,0)) # display text on the Mode panel (as a surface object)
+        self.screen.blit(self.surf_mode,self.panel_dests["mode"]) # display the mode panel on the screen
 
     # I'm surprised that python supports variable as default parameter for function
     def get_nctrlpnts(self, inst):
