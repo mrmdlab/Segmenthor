@@ -51,7 +51,7 @@ def hotkeys_keyboard(self,event):
             self.dispMsg(message,offset)
             Thread(target=set_image,args=(self,)).start()
         
-    self.renderMode()
+    self.renderPanel("mode")
 
 
 # from gui import SAM4Med # For data type checking only, should be commented out
@@ -108,7 +108,8 @@ def hotkeys_mouse(self, event):
     print("Mouse position:", event.pos)
 
 def set_image(self):
+    frame=self.frame # in case user switches to another slice while image embedding is being computed
     predictor.set_image(self.slc)
     print("Image embedding has been computed")
-    self.hasParsed[self.frame]=1
+    self.hasParsed[frame]=1
     

@@ -17,13 +17,14 @@ class SAM4Med:
         self.window_size = np.array([800, 600])
 
         # set up parameters of panel
-        self.panel_size=(120,20) # (width, height)
+        self.panel_size=(140,20) # (width, height)
         self.panel_dests={
             "mode":(15*1,15),
             "volume":(15*11,15)
         }
         self.panel_color = "yellow"
         self.surf_mode=pygame.Surface(self.panel_size)
+        self.surf_volume=pygame.Surface(self.panel_size)
         
         self.panel_font_size=20
         self.panel_font=pygame.font.Font(None, self.panel_font_size)
@@ -164,27 +165,30 @@ class SAM4Med:
             pixdim=self.header.get("pixdim")
 
             self.voxel_size=pixdim[1]*pixdim[2]*pixdim[3] # mm^3
+            self.volume=0
 
             self.nframes=self.data.shape[2]
             self.frame = int((self.nframes-1)/2)
 
 
-            # control points: dict = {frame : instances}
-            # instances: list = [inst1, inst2, ...] 
-            # inst1: dict = {"neg": pnts, "pos":pnts}
-            # pnts: list = [pnt1, pnt2, ...]
-            # pnt1: np.ndarray = (x1 ,y1)
+            '''
+            control points: dict = {frame : instances}
+            instances: list = [inst1, inst2, ...] 
+            inst1: dict = {"neg": pnts, "pos":pnts}
+            pnts: list = [pnt1, pnt2, ...]
+            pnt1: np.ndarray = (x1 ,y1)
             
-            # self.ctrlpnts[self.frame][self.mask_instance]["pos"][4]
-            #     -> in the current frame, coordinates of the 5th positive control point:
-            # one instance represents one tumor, in case there are multiple tumors in one frame
+            self.ctrlpnts[self.frame][self.mask_instance]["pos"][4]
+                -> in the current frame, coordinates of the 5th positive control point:
+            one instance represents one tumor, in case there are multiple tumors in one frame
 
-            # maks:dict= {frame:instances}
-            # instances:list=[inst1, inst2, ...]
-            # inst1:np.ndarray, ndim=2, dtype=uint8, element value = 1 or 0
-            #
-            # every mask corresponds to one particular mask_instance
-            #       and one set of positive and negative control points
+            maks:dict= {frame:instances}
+            instances:list=[inst1, inst2, ...]
+            inst1:np.ndarray, ndim=2, dtype=uint8, element value = 1 or 0
+            
+            every mask corresponds to one particular mask_instance
+                  and one set of positive and negative control points
+            '''
             self.masks={}
             self.ctrlpnts={}
             for i in range(self.nframes):
@@ -288,7 +292,8 @@ class SAM4Med:
         renderMask()
         renderSliceNumber()
         renderCtrlPnts()
-        self.renderMode()
+        self.renderPanel("mode")
+        self.renderPanel("volume")
 
     def pan(self):
         if self.isKeyDown.get(enums.LMB) and hasattr(self,"data"): # in case user clicks the window before an image is loaded
@@ -308,12 +313,23 @@ class SAM4Med:
                 self.loc_slice=self.old_loc_slice+self.old_slc_size/2-self.slc_size/2
                 self.renderSlice()
 
-    def renderMode(self):
-        text=f"Mode: {self.mode}"
+    def renderPanel(self,panel):
+        match panel:
+            case "volume":
+                surf=self.surf_volume
+                num=0
+                for masks_of_frame in self.masks.values():
+                    for mask in masks_of_frame:
+                        num+=mask.sum()
+                self.volume=self.voxel_size*num
+                text=f"Volume: {self.volume:.2f} mm3"
+            case "mode":
+                text=f"Mode: {self.mode}"
+                surf=self.surf_mode
         text = self.panel_font.render(text, True, self.panel_color)
-        self.surf_mode.fill(self.BGCOLOR)
-        self.surf_mode.blit(text,(0,0)) # display text on the Mode panel (as a surface object)
-        self.screen.blit(self.surf_mode,self.panel_dests["mode"]) # display the mode panel on the screen
+        surf.fill(self.BGCOLOR)
+        surf.blit(text,(0,0)) # display text on the panel
+        self.screen.blit(surf,self.panel_dests[panel]) # draw the panel on the screen
 
     # I'm surprised that python supports variable as default parameter for function
     def get_nctrlpnts(self, inst):

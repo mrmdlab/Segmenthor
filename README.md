@@ -2,7 +2,6 @@
 
 ### IMPORTANT
 - Fix bug: when going to SEGMENT, then ZOOMPAN, then SEGMENT again, shouldn't compute embedding twice
-- display segmentation volume
 - Fix bug: initialize a `mask_instance` when pressing `S`
 - display a message to indicate:
     - computing the image embedding of slice n
@@ -71,6 +70,7 @@
 - to compute the image embedding takes a long time, but to predict is very fast. Maybe GPU is necessary
 
 ## changelog
+- display segmentation volume
 - refactor: reuse font object
 - change function name: dispReminder()->dispMsg()
 - refactor: separate keyboard events into hotkeys.py
