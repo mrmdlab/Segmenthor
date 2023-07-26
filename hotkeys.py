@@ -1,8 +1,8 @@
 import numpy as np
-from sam import predictor
+from segment_anything import SamPredictor
 import enums
 import pygame
-from threading import Thread
+import multiprocessing as mpc
 
 
 # def throughSlices(self:SAM4Med, event):
@@ -45,11 +45,13 @@ def hotkeys_keyboard(self,event):
 
             # ! Fix me:
             # ! shouldn't make the message disappear too early
+            # ! messages={frame:text}
             # ! should make a new function: renderMessage() and call it in renderSlice()
-            message="Computing the image embedding..."
+            message=f"Computing the image embedding of frame {self.frame+1}..."
             offset=(0,self.window_size[1]/2-self.msg_font_size-10) # distance from the bottom: size+10
             self.dispMsg(message,offset)
-            Thread(target=set_image,args=(self,)).start()
+            mpc.Process(target=set_predictor,args=(self,)).start()
+
         
     self.renderPanel("mode")
 
@@ -80,8 +82,8 @@ def hotkeys_mouse(self, event):
         point_labels=np.array([1]*len(pos_ctrlpnts)+[0]*len(neg_ctrlpnts))
 
         # ! Fix me: maybe try iterative prediction?
-        predicted_masks, scores, _ = predictor.predict(point_coords,
-                                            point_labels)
+        predicted_masks, scores, _ = self.predictors[self.frame].predict(point_coords,
+                                                                         point_labels)
         predicted_mask=predicted_masks[scores.argmax()].astype(np.uint8)
         print("mask quality: ",scores.max())
 
@@ -107,9 +109,25 @@ def hotkeys_mouse(self, event):
     self.old_mouse_pos=np.array(event.pos)
     print("Mouse position:", event.pos)
 
-def set_image(self):
-    frame=self.frame # in case user switches to another slice while image embedding is being computed
-    predictor.set_image(self.slc)
-    print("Image embedding has been computed")
-    self.hasParsed[frame]=1
+def set_predictor(self):
+    # !Fix me: shouldn't compute the image embedding repeatedly
+    if len(self.predictors)<self.ncpu:
+        self.predictors[self.frame] = SamPredictor(self.sam)
+        frame=self.frame # in case user switches to another slice while image embedding is being computed
+        self.predictors[self.frame].set_image(self.slc)
+        # !Fix me: display the message on the screen
+        print(f"Image embedding of frame {frame+1} has been computed")
+        self.hasParsed[frame]=1
+    else:
+        # ! Fix me:
+        # ! to make sure it's safe, can't reset the image until the previous image has been parsed
+        print("predictors will exceed the number of CPUs!")
+        print("Press `Shift+S` to force doing this")
+        # TODO: set hotkey for Shift+S
+        # this will replace the image of oldest predictor, set it to the current image
+        self.predictors[self.frame]=self.predictors.popitem(False)
+        self.predictors[self.frame].set_image(self.slc)
+
+
+
     

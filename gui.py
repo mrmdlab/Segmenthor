@@ -3,15 +3,20 @@ import numpy as np
 import nibabel as nib
 import os
 import time
+from multiprocessing import cpu_count
+from collections import OrderedDict
 
-from sam import predictor
+from segment_anything import sam_model_registry
 import enums
 import hotkeys
 
 
 class SAM4Med:
-    def __init__(self):
+    def __init__(self,model="vit_b"):
         pygame.init()
+
+        self.ncpu=cpu_count() # number of logical processors
+        self.sam = sam_model_registry[model](checkpoint=f"checkpoints/sam_{model}.pth")
 
         #! Fix me: better windows size
         self.window_size = np.array([800, 600])
@@ -133,7 +138,7 @@ class SAM4Med:
             pos_ctrlpnts=[(pos-4-self.loc_slice)/self.resize_factor]
             point_coords=np.array(pos_ctrlpnts)[:,::-1]
             point_labels=np.array([1]*len(pos_ctrlpnts))
-            masks, scores, _ = predictor.predict(point_coords,
+            masks, scores, _ = self.predictors[self.frame].predict(point_coords,
                                                 point_labels)
             mask=masks[scores.argmax()].astype(np.uint8) # ndim=2
 
@@ -154,6 +159,12 @@ class SAM4Med:
         isPathValid = os.path.isfile(path) and (path.endswith(".nii") or path.endswith(".nii.gz"))
             
         if isPathValid:
+            self.mode=enums.ZOOMPAN # when loading a new image, set ZOOMPAN mode by default
+
+            '''
+            predictors:dict={frame:SamPredictor}
+            '''
+            self.predictors=OrderedDict()
             self.screen.fill(self.BGCOLOR)
 
             img = nib.load(path)

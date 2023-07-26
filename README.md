@@ -1,6 +1,8 @@
 ## todo
 
 ### IMPORTANT
+- Fix big bug: multiprocessing opens multiple windows, how come?
+- don't compute image embedding unless `S` is pressed. User can quickly go through all the slices and identify which slices have tumor. Then enter SEGMENT mode. then press `S` at every slice that has tumor. For example, if 6 slices have tumor, enter SEGMENT mode, press `S` at each of the 6 slices. Computation will be done in multiple processes (i.e. in parallel). They should be done at about the same time.
 - Fix bug: when going to SEGMENT, then ZOOMPAN, then SEGMENT again, shouldn't compute embedding twice
 - Fix bug: initialize a `mask_instance` when pressing `S`
 - display a message to indicate:
@@ -10,7 +12,6 @@
 - Note, different masks may possibly overlap
 - what parameters need to be renewed when loading a new image?
 - refactor: change `masks` into `dict`. convert into the same shape as that of data only when exporting to `nifti`
-- don't compute image embedding unless `S` is pressed. User can quickly go through all the slices and identify which slices have tumor. Then enter SEGMENT mode. then press `S` at every slice that has tumor. For example, if 6 slices have tumor, enter SEGMENT mode, press `S` at each of the 6 slices. Computation will be done in multiple processes (i.e. in parallel). They should be done at about the same time.
     - Fix bug: display message about the progress of computing image embedding for different slices
 - Ctrl+S, export mask automatically to `derivatives` folder
 - Fix bug: when cursor is outside the slice, disable previewMask()
