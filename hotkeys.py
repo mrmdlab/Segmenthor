@@ -1,8 +1,12 @@
+# print("-------xxxxxxxxxx----------- this is:",__name__) # always hotkeys
+
 import numpy as np
-from segment_anything import SamPredictor
 import enums
 import pygame
-import multiprocessing as mpc
+import multiprocessing as mp
+import nibabel as nib
+from pathlib import Path
+import os
 
 
 # def throughSlices(self:SAM4Med, event):
@@ -41,16 +45,27 @@ def hotkeys_keyboard(self,event):
         case pygame.K_z:
             self.mode = enums.ZOOMPAN
         case pygame.K_s:
-            self.mode = enums.SEGMENT
+            if pygame.key.get_mods() & pygame.KMOD_CTRL: # Ctrl+S
+                saveMask(self)
+            else: # S
+                self.mode = enums.SEGMENT
 
-            # ! Fix me:
-            # ! shouldn't make the message disappear too early
-            # ! messages={frame:text}
-            # ! should make a new function: renderMessage() and call it in renderSlice()
-            message=f"Computing the image embedding of frame {self.frame+1}..."
-            offset=(0,self.window_size[1]/2-self.msg_font_size-10) # distance from the bottom: size+10
-            self.dispMsg(message,offset)
-            mpc.Process(target=set_predictor,args=(self,)).start()
+                # ! Fix me:
+                # ! shouldn't make the message disappear too early
+                # ! messages={frame:text}
+                # ! should make a new function: renderMessage() and call it in renderSlice()
+                message=f"Computing the image embedding of frame {self.frame+1}..."
+                offset=(0,self.window_size[1]/2-self.msg_font_size-10) # distance from the bottom: size+10
+                self.dispMsg(message,offset)
+                this={}
+                this["ncpu"]=mp.cpu_count()
+                this["frame"]=self.frame
+
+                this["predictors"]=self.predictors
+                this["sam"]=self.sam
+                this["slc"]:np.ndarray=self.slc
+                this["hasParsed"]:np.ndarray=self.hasParsed
+                mp.Process(target=set_predictor,args=(this,)).start()
 
         
     self.renderPanel("mode")
@@ -109,15 +124,65 @@ def hotkeys_mouse(self, event):
     self.old_mouse_pos=np.array(event.pos)
     print("Mouse position:", event.pos)
 
-def set_predictor(self):
-    # !Fix me: shouldn't compute the image embedding repeatedly
-    if len(self.predictors)<self.ncpu:
-        self.predictors[self.frame] = SamPredictor(self.sam)
-        frame=self.frame # in case user switches to another slice while image embedding is being computed
-        self.predictors[self.frame].set_image(self.slc)
-        # !Fix me: display the message on the screen
-        print(f"Image embedding of frame {frame+1} has been computed")
-        self.hasParsed[frame]=1
+def pan(self):
+    if self.isKeyDown.get(enums.LMB) and hasattr(self,"data"): # in case user clicks the window before an image is loaded
+        new_pos=np.array(pygame.mouse.get_pos())
+        self.loc_slice=self.old_loc_slice+new_pos-self.old_mouse_pos
+        self.renderSlice()
+
+def zoom(self):
+    if self.isKeyDown.get(enums.RMB) and hasattr(self,"data"):
+        new_pos=pygame.mouse.get_pos()
+        new_resize_factor=self.old_resize_factor+(self.old_mouse_pos[1]-new_pos[1])*0.01
+        if new_resize_factor>0.25: # can't be zoomed out too much
+            self.resize_factor=new_resize_factor
+            self.update_slc_size()
+
+            # keep the center pixel at the same location
+            self.loc_slice=self.old_loc_slice+self.old_slc_size/2-self.slc_size/2
+            self.renderSlice()
+
+def saveMask(self):
+    def getMask():
+        mask=np.zeros_like(self.data)
+        for frame in self.masks:
+            for inst in self.masks[frame]:
+                mask[:,:,frame]+=inst
+        return mask.clip(max=1)
+    
+    # automatically save to `BIDS_folder/derivatives/sub-xx/ses-xx/anat/xxx_mask.nii(.gz)`
+    def getPath()->Path:
+        path=Path(self.path)
+        name=path.name
+        p1=os.path.splitext(name)
+        p2=os.path.splitext(p1[0])
+        path=path.with_name(p2[0]+"_mask"+p2[1]+p1[1]) # change file name, adding "_mask"
+        bids_folder=path.parents[3] # BIDS_folder
+        path=bids_folder/"derivatives"/path.relative_to(bids_folder)
+        return path
+    
+    mask=getMask()
+    path=getPath()
+    mask=nib.Nifti1Image(mask,self.mask_affine,self.mask_header)
+    # TODO: user may want to save individual masks for every tumor
+    os.makedirs(path.parent,exist_ok=True) # ensure the folder exists
+    nib.save(mask,path)
+    print("mask is saved successfully to:\n",path)
+
+def set_predictor(this):
+    from segment_anything import SamPredictor
+
+    frame=this["frame"]
+    print("--------xxxxxxxxxx----------",this["hasParsed"])
+    # ! Fix me: not working
+    # ! maybe the way in which processes commuicate isn't standard. Can try Queue()
+    # shouldn't compute the image embedding repeatedly
+    if this["hasParsed"][frame]:
+        return
+    
+    if len(this["predictors"])<this["ncpu"]:
+        this["predictors"][frame] = SamPredictor(this["sam"])
+        print("begin computing",frame+1)
     else:
         # ! Fix me:
         # ! to make sure it's safe, can't reset the image until the previous image has been parsed
@@ -125,9 +190,14 @@ def set_predictor(self):
         print("Press `Shift+S` to force doing this")
         # TODO: set hotkey for Shift+S
         # this will replace the image of oldest predictor, set it to the current image
-        self.predictors[self.frame]=self.predictors.popitem(False)
-        self.predictors[self.frame].set_image(self.slc)
-
-
-
+        # ! Fix me: shouldn't do this!
+        # it should wait until any frame has been parsed
+        # and then one more CPU is available
+        # but this will add to workload of RAM
+        this["predictors"][frame]=this["predictors"].popitem(False) # FIFO
+        print("Here should change the message for the affected slice")
+    this["predictors"][frame].set_image(this["slc"])
+    # !Fix me: display the message on the screen
+    print(f"Image embedding of frame {frame+1} has been computed")
+    this["hasParsed"][frame]=1
     

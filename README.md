@@ -1,7 +1,8 @@
 ## todo
 
 ### IMPORTANT
-- Fix big bug: multiprocessing opens multiple windows, how come?
+- Fix bug: before image is loaded, shouldn't allow user to go through slices (self.frame undefined)
+- display a message after mask is saved successfully
 - don't compute image embedding unless `S` is pressed. User can quickly go through all the slices and identify which slices have tumor. Then enter SEGMENT mode. then press `S` at every slice that has tumor. For example, if 6 slices have tumor, enter SEGMENT mode, press `S` at each of the 6 slices. Computation will be done in multiple processes (i.e. in parallel). They should be done at about the same time.
 - Fix bug: when going to SEGMENT, then ZOOMPAN, then SEGMENT again, shouldn't compute embedding twice
 - Fix bug: initialize a `mask_instance` when pressing `S`
@@ -9,38 +10,28 @@
     - computing the image embedding of slice n
     - image embedding of slice n is ready (how many seconds)
     - Fix bug: should always display the correct message when going through other slices. Don't let it disappear too early
-- Note, different masks may possibly overlap
 - what parameters need to be renewed when loading a new image?
-- refactor: change `masks` into `dict`. convert into the same shape as that of data only when exporting to `nifti`
     - Fix bug: display message about the progress of computing image embedding for different slices
-- Ctrl+S, export mask automatically to `derivatives` folder
 - Fix bug: when cursor is outside the slice, disable previewMask()
 - Fix bug: change color of old masks immediately when a new mask instance is created
-- Fix bug: tab doesn't work
+
 - Ctrl+Z, undo one control point
     - when undo the first operation, don't predict mask, becasue there're no more control points
 - Ctrl+Y, redo (undo the previous "undo")
 - refacotr: rendering
     - render mask, control points on `self.surf_slc` instead of on `self.screen`
-    - `self.surf_mode`
-    - `self.surf_sample_vol`
+    - `self.surf_mode` done
+    - `self.surf_volume` done
     - `self.surf_msg`
 - is it possible to save image embedding? How long does it take to load?
-- refactor: control_points
-    - set a hotkey for making a new mask
-    - use different color to indicate the active instance and others (inactive: green, active: red)
-        - in previewMask mode, show all existing masks in inactive color
-        - use A and D to change the mask_alpha for all masks
+- use A and D to change the mask_alpha for all masks
 - deal with multiple tumors. i.e. allow predict a new mask rather than user has to use all control points for one single mask
 - if computing image embedding takes too long, we can compute it in advance. ie. let it run overnight
 - shouldn't compute image embedding repeatedly. ie. cache the image embedding
 - display a reminder when it's computing the embedding of the image. Need to display which frame is being calculated
 - encrypt software
     - fast mock account verification
-- save mask as `.nii.gz`  Combine all mask instances
-- Segment Anything inference
-    - when there's neither positive nor negative control points, respond in real time
-    - allow user to do other stuff, like zoom, pan, going through slices, while calculating the image embedding
+- allow user to do other stuff, like zoom, pan, going through slices, while calculating the image embedding
  
 
 ### OTHERS
@@ -71,6 +62,18 @@
 - to compute the image embedding takes a long time, but to predict is very fast. Maybe GPU is necessary
 
 ## changelog
+- refactor: control_points
+    - set a hotkey for making a new mask
+    - use different color to indicate the active instance and others (inactive: green, active: red)
+        - in previewMask mode, show all existing masks in inactive color
+- save mask as `.nii.gz`  Combine all mask instances
+- Ctrl+S, export mask automatically to `derivatives` folder
+- Fix big bug: multiprocessing opens multiple windows, how come?
+    - by means of `__name__`
+- Fix bug: tab doesn't work
+- refactor: change `masks` into `dict`. convert into the same shape as that of data only when exporting to `nifti`
+- Note, different masks may possibly overlap
+- refactor: move zoom() and pan() into hotkeys.py
 - display segmentation volume
 - refactor: reuse font object
 - change function name: dispReminder()->dispMsg()
@@ -89,6 +92,7 @@
 - refacotor: seperate key and button events into hotkeys.py
 - Segment Anything inference
     - label points in different color to indicate positive and negative control points
+    - when there's neither positive nor negative control points, respond in real time (previewMask)
 - semitransparent masks (done with colorkey)
 - Fix bug: mouse.pos -> (Width,Height,Channels)  || input of predictor.predict() -> (Height,Width,Channels)
 - hotkeys
@@ -108,31 +112,3 @@
 pip install opencv-python pycocotools matplotlib onnxruntime onnx
 ```
 
-## Tutorial
-### models
-- ViT, vision transformer see [reference](http://arxiv.org/abs/2010.11929)
-- ViT-B, base model
-- ViT-L, large model
-- ViT-H, huge model
-
-### reminder
-- Disable Chinese input method, if any, before using this software
-
-### ZOOMPAN
-- left mouse button to pan
-- right mouse button to zoom
-
-### SEGMENT
-- LMB to add one positive control point
-- RMB to add one negative control point
-- Ctrl+Z to undo one control point
-
-### hotkeys
-| hotkey | explanation                |
-| ------ | -------------------------- |
-| A      | decrease mask transparency |
-| D      | increase mask transparency |
-| S      | change to SEGMENT Mode     |
-| Z      | change to ZOOMPAN Mode     |
-| Tab    | go through mask instances  |
-| Space  | make a new mask instance   |
