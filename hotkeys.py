@@ -9,18 +9,18 @@ from pathlib import Path
 import os
 
 
-# def throughSlices(self:SAM4Med, event):
 def throughSlices(self, event):
-    temp = -1
-    if event.button == enums.WHEEL_UP:  # mouse wheel up
-        temp = self.frame + 1
-    elif event.button == enums.WHEEL_DOWN:
-        temp = self.frame - 1
+    if self.frame!=-1: # ensure an image has been loaded
+        temp = -1
+        if event.button == enums.WHEEL_UP:  # mouse wheel up
+            temp = self.frame + 1
+        elif event.button == enums.WHEEL_DOWN:
+            temp = self.frame - 1
 
-    if 0 <= temp < self.data.shape[2]:
-        self.frame=temp
-        self.mask_instance=len(self.ctrlpnts[self.frame])-1
-        self.renderSlice()
+        if 0 <= temp < self.data.shape[2]:
+            self.frame=temp
+            self.mask_instance=len(self.ctrlpnts[self.frame])-1
+            self.renderSlice()
 
 def hotkeys_keyboard(self,event):
     match event.key:
@@ -57,22 +57,33 @@ def hotkeys_keyboard(self,event):
                 message=f"Computing the image embedding of frame {self.frame+1}..."
                 offset=(0,self.window_size[1]/2-self.msg_font_size-10) # distance from the bottom: size+10
                 self.dispMsg(message,offset)
-                this={}
-                this["ncpu"]=mp.cpu_count()
-                this["frame"]=self.frame
+                    # with mp.Manager() as manager:
+                    # this=manager.dict()
+                    
+                    # p.join()
+                    # self.processes[self.frame]=p
+                    # self.predictors[self.frame]=this
+                        # self.queues[self.frame]=q
+                        # p.join()
+                        # print(this["hasParsed"])
+                        # print(this["predictors"].get(self.frame))
+                        # 1TODO: it seems manager.dict() copies data for only depth-one
+                        # we can modify its key-value
+                        # but can't modify the value's key-value
+                        
+                        # print("alive? ",p.is_alive())
+                    # print("empty? ",q.empty())
 
-                this["predictors"]=self.predictors
-                this["sam"]=self.sam
-                this["slc"]:np.ndarray=self.slc
-                this["hasParsed"]:np.ndarray=self.hasParsed
-                mp.Process(target=set_predictor,args=(this,)).start()
-
+                if not self.hasParsed[self.frame]:
+                    this={}
+                    this["sam"]=self.sam
+                    this["slc"]=self.slc
+                    q=mp.Queue(maxsize=2)
+                    self.queues[self.frame]=q
+                    mp.Process(target=set_predictor, args=(q,this)).start()
         
     self.renderPanel("mode")
 
-
-# from gui import SAM4Med # For data type checking only, should be commented out
-# def hotkeys_mouse(self:SAM4Med, event):
 def hotkeys_mouse(self, event):
     def appendCtrlPnt(ctrlpnts:list):
         # minus 4 because we want the center of point to be shown at where we click
@@ -123,6 +134,7 @@ def hotkeys_mouse(self, event):
     self.old_loc_slice=self.loc_slice.copy() # mind shallow copy, I made a mistake here
     self.old_mouse_pos=np.array(event.pos)
     print("Mouse position:", event.pos)
+    print(len(mp.active_children()))
 
 def pan(self):
     if self.isKeyDown.get(enums.LMB) and hasattr(self,"data"): # in case user clicks the window before an image is loaded
@@ -169,35 +181,46 @@ def saveMask(self):
     nib.save(mask,path)
     print("mask is saved successfully to:\n",path)
 
-def set_predictor(this):
+def set_predictor(q,this):
     from segment_anything import SamPredictor
 
-    frame=this["frame"]
-    print("--------xxxxxxxxxx----------",this["hasParsed"])
-    # ! Fix me: not working
-    # ! maybe the way in which processes commuicate isn't standard. Can try Queue()
-    # shouldn't compute the image embedding repeatedly
-    if this["hasParsed"][frame]:
-        return
-    
-    if len(this["predictors"])<this["ncpu"]:
-        this["predictors"][frame] = SamPredictor(this["sam"])
-        print("begin computing",frame+1)
-    else:
-        # ! Fix me:
-        # ! to make sure it's safe, can't reset the image until the previous image has been parsed
-        print("predictors will exceed the number of CPUs!")
-        print("Press `Shift+S` to force doing this")
-        # TODO: set hotkey for Shift+S
-        # this will replace the image of oldest predictor, set it to the current image
-        # ! Fix me: shouldn't do this!
-        # it should wait until any frame has been parsed
-        # and then one more CPU is available
-        # but this will add to workload of RAM
-        this["predictors"][frame]=this["predictors"].popitem(False) # FIFO
-        print("Here should change the message for the affected slice")
-    this["predictors"][frame].set_image(this["slc"])
-    # !Fix me: display the message on the screen
-    print(f"Image embedding of frame {frame+1} has been computed")
-    this["hasParsed"][frame]=1
+    # !Fix me: change to message on the screen
+    print("computing the image embedding...")
+    predictor=SamPredictor(this["sam"])
+    predictor.set_image(this["slc"])
+    # in main process, check q.full() to know whether the task is done
+    q.put(predictor)
+    q.put("done")
+    print("image embedding is done")
+
+# def set_predictor(q):
+#     from segment_anything import SamPredictor
+
+#     this=q.get()
+#     frame=this["frame"]
+#     # TODO: for trial version, restrict the ncpu to be 2
+#     # TODO: make sure the total number of processes shouldn't exceed ncpu
+#     # maybe should check that before calling this method
+#     if len(this["predictors"])<this["ncpu"]:
+#         this["predictors"][frame] = SamPredictor(this["sam"])
+#         print("begin computing",frame+1)
+#     else:
+#         # ! Fix me:
+#         # ! to make sure it's safe, can't reset the image until the previous image has been parsed
+#         print("predictors will exceed the number of CPUs!")
+#         print("Press `Shift+S` to force doing this")
+#         # TODO: set hotkey for Shift+S
+#         # this will replace the image of oldest predictor, set it to the current image
+#         # ! Fix me: shouldn't do this!
+#         # Instead, it should wait until any frame has been parsed
+#         # and then one more CPU is available
+#         # but this will add to workload of RAM
+#         # TODO: why not simply use the Queue model
+#         # TODO: and let extra slice images to queue before they can be parsed?
+#         this["predictors"][frame]=this["predictors"].popitem(False) # FIFO
+#         print("Here should change the message for the affected slice")
+#     this["predictors"][frame]
+#     # !Fix me: display the message on the screen
+#     print(f"Image embedding of frame {frame+1} has been computed")
+
     

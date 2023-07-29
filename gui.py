@@ -4,7 +4,7 @@ if __name__=="__main__": # prevent that multiple pygame windows are opened from 
     import nibabel as nib
     import os
     import time
-    from collections import OrderedDict
+    import multiprocessing as mp
 
     from segment_anything import sam_model_registry
     import enums
@@ -16,6 +16,8 @@ if __name__=="__main__": # prevent that multiple pygame windows are opened from 
             pygame.init()
 
             self.sam = sam_model_registry[model](checkpoint=f"checkpoints/sam_{model}.pth")
+            self.ncpu=mp.cpu_count()
+            self.frame=-1 # used to check whether an image has been loaded
 
             #! Fix me: better windows size
             self.window_size = np.array([800, 600])
@@ -88,7 +90,8 @@ if __name__=="__main__": # prevent that multiple pygame windows are opened from 
 
                         case pygame.KEYDOWN:
                             self.isKeyDown[event.key]=True
-                            hotkeys.hotkeys_keyboard(self,event)
+                            if self.frame!=-1:
+                                hotkeys.hotkeys_keyboard(self,event)
 
                 # Hotkeys for A, D
                 # ! Fix me: hotkeys not working
@@ -117,6 +120,22 @@ if __name__=="__main__": # prevent that multiple pygame windows are opened from 
                         hotkeys.pan(self)
                         hotkeys.zoom(self)
                     case enums.SEGMENT:
+                        # check whether the image embedding has been parsed
+                        # q=self.queues.get(self.frame)
+                        # !Fix me: it happens that before the subprocess gets the object,
+                        #  the object has been got by the main process
+
+                        # if (not self.hasParsed[self.frame]) and \
+                        #    (not self.processes[self.frame].is_alive()):
+                        #     print("done")
+                        q:mp.Queue=self.queues.get(self.frame,False)
+                        if q and q.full():
+                            # this=self.predictors[self.frame]
+                            # self.predictors[self.frame]=this["predictor"]
+                            self.predictors[self.frame]=q.get()
+                            q.get() # clear the queue
+                            self.hasParsed[self.frame]=1
+
                         # disable previewMask() when there has been one control point for the current active mask
                         # ensure the image embedding has been prepared
                         if self.get_nctrlpnts(self.mask_instance)==0 and self.hasParsed[self.frame]:
@@ -160,10 +179,9 @@ if __name__=="__main__": # prevent that multiple pygame windows are opened from 
             if isPathValid:
                 self.mode=enums.ZOOMPAN # when loading a new image, set ZOOMPAN mode by default
 
-                '''
-                predictors:dict={frame:SamPredictor}
-                '''
-                self.predictors=OrderedDict()
+                self.predictors={} # {frame:SamPredictor}
+                # self.processes:dict[int,mp.Process]={} # {frame: mp.Process}
+                self.queues={} #{frame:mp.Queue}
                 self.screen.fill(self.BGCOLOR)
 
                 img = nib.load(path)
@@ -183,7 +201,7 @@ if __name__=="__main__": # prevent that multiple pygame windows are opened from 
                 self.volume=0
 
                 self.nframes=self.data.shape[2]
-                self.frame = int((self.nframes-1)/2)
+                self.frame = int((self.nframes)/2)
 
 
                 '''
@@ -248,9 +266,9 @@ if __name__=="__main__": # prevent that multiple pygame windows are opened from 
 
         def renderSlice(self):  
             # print("renderSlice")
-
             # when one of self.loc_slice, self.frame, self.slc_size, self.data changes
             # you should call this function
+
             def renderSliceNumber():
                 [width,height]=self.slc_size
                 font_size=20 # should be the same as self.panel_font
