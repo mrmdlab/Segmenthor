@@ -5,8 +5,10 @@
 - ViT-H, huge model
 
 ### reminder
+- This beta version will expire soon. Please contact fengh@imcb.a-star.edu.sg for subscription.
+- For this beta version, it requires internet connection for verification purpose.
 - Disable Chinese input method, if any, before using this software
-- Don't press Enter too often.
+- Don't press Enter too often in order to avoid potential bugs
 
 ### ZOOMPAN
 - left mouse button to pan
