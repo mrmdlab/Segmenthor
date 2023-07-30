@@ -11,17 +11,16 @@ import time
 
 
 def throughSlices(self, event):
-    if self.frame!=-1: # ensure an image has been loaded
-        temp = -1
-        if event.button == enums.WHEEL_UP:  # mouse wheel up
-            temp = self.frame + 1
-        elif event.button == enums.WHEEL_DOWN:
-            temp = self.frame - 1
+    temp = -1
+    if event.button == enums.WHEEL_UP:  # mouse wheel up
+        temp = self.frame + 1
+    elif event.button == enums.WHEEL_DOWN:
+        temp = self.frame - 1
 
-        if 0 <= temp < self.data.shape[2]:
-            self.frame=temp
-            self.mask_instance=len(self.ctrlpnts[self.frame])-1
-            self.renderSlice()
+    if 0 <= temp < self.data.shape[2]:
+        self.frame=temp
+        self.mask_instance=len(self.ctrlpnts[self.frame])-1
+        self.renderSlice()
 
 def hotkeys_keyboard(self,event):
     match event.key:
@@ -29,7 +28,6 @@ def hotkeys_keyboard(self,event):
             if self.mode==enums.SEGMENT:
                 self.mask_instance+=1
                 self.mask_instance%=len(self.ctrlpnts[self.frame])
-                self.renderSlice()
         case pygame.K_SPACE:
             if self.mode==enums.SEGMENT:
                 if self.get_nctrlpnts(-1)>0:
@@ -47,31 +45,50 @@ def hotkeys_keyboard(self,event):
             self.mode = enums.ZOOMPAN
         case pygame.K_s:
             if pygame.key.get_mods() & pygame.KMOD_CTRL: # Ctrl+S
+                # TODO: display save mask successfully message temporarily
+                # and then display the previous message
+                # may use a thread
                 saveMask(self)
             else: # S
                 self.mode = enums.SEGMENT
-
-                # ! Fix me:
-                # ! shouldn't make the message disappear too early
-                # ! messages={frame:text}
-                # ! should make a new function: renderMessage() and call it in renderSlice()
-                message=f"Computing the image embedding of frame {self.frame+1}..."
-                offset=(0,self.window_size[1]/2-self.msg_font_size-10) # distance from the bottom: size+10
-                self.dispMsg(message,offset)
-
-                if not self.hasParsed[self.frame]:
+                # TODO: shouldn't exceed ncpu
+                p=self.processes.get(self.frame)
+                if self.hasParsed[self.frame]:
+                    self.msgs[self.frame]=f"The image embedding of frame {self.frame+1} has been computed"
+                elif p is not None:
+                    if p.is_alive():
+                        self.msgs[self.frame]=f"The image embedding of frame {self.frame+1} is being computed..."
+                    else:
+                        self.msgs[self.frame]=f"Removed frame {self.frame+1} from the list"
+                        self.queues.pop(self.frame)
+                        self.processes.pop(self.frame)
+                else:
+                    self.msgs[self.frame]=f"Ready to compute the image embedding of frame {self.frame+1}..."
                     this={}
                     this["sam"]=self.sam
                     this["slc"]=self.slc
                     q=mp.Queue(maxsize=2)
                     p=mp.Process(target=set_predictor, args=(q,this))
-                    p.start()
                     self.queues[self.frame]=q
                     self.processes[self.frame]=p
-        case pygame.K_RETURN:
-            print("Return")
 
-    self.renderPanel("mode")
+        case pygame.K_RETURN:
+            def condition():
+                # in case user presses `Enter` multiple times
+                result = not self.queues[frame].full()
+                result = result and (not self.hasParsed[frame])
+                result = result and (not p.is_alive())
+                return result
+            for frame,p in self.processes.items():
+                if condition():
+                    self.msgs[frame]=f"The image embedding of frame {self.frame+1} is being computed..."
+            self.renderSlice()
+            pygame.display.flip()
+            for frame,p in self.processes.items():
+                if condition():
+                    p.start()
+
+    self.renderSlice()
 
 def hotkeys_mouse(self, event):
     def appendCtrlPnt(ctrlpnts:list):
@@ -123,7 +140,7 @@ def hotkeys_mouse(self, event):
     self.old_loc_slice=self.loc_slice.copy() # mind shallow copy, I made a mistake here
     self.old_mouse_pos=np.array(event.pos)
     print("Mouse position:", event.pos)
-    # print(len(mp.active_children()))
+    print("active subprocesses: ",len(mp.active_children()))
 
 def adjustMaskAlpha(self):
     keyA=self.isKeyDown.get(pygame.K_a)
@@ -186,14 +203,11 @@ def saveMask(self):
 def set_predictor(q,this):
     from segment_anything import SamPredictor
 
-    # !Fix me: change to message on the screen
-    print("computing the image embedding...")
     predictor=SamPredictor(this["sam"])
     predictor.set_image(this["slc"])
     # in main process, check q.full() to know whether the task is done
     q.put(predictor)
     q.put("done")
-    print("image embedding is done")
 
 # def set_predictor(q):
 #     from segment_anything import SamPredictor

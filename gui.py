@@ -26,19 +26,21 @@ if __name__=="__main__": # prevent that multiple pygame windows are opened from 
             self.panel_size=(140,20) # (width, height)
             self.panel_dests={
                 "mode":(15*1,15),
-                "volume":(15*11,15)
+                "volume":(15*11,15),
+                "msg":(0,self.window_size[1]-40)
             }
             self.panel_color = "yellow"
-            self.surf_mode=pygame.Surface(self.panel_size)
-            self.surf_volume=pygame.Surface(self.panel_size)
-            
+
             self.panel_font_size=20
             self.panel_font=pygame.font.Font(None, self.panel_font_size)
             self.msg_font_size=30
             self.msg_font = pygame.font.Font(None, self.msg_font_size)
             self.ctrlpnt_font = pygame.font.Font(None, size=25) # size=25 is related to "minus 4" in hotkeys.appendCtrlPnt()
-
-
+            
+            self.surf_mode=pygame.Surface(self.panel_size)
+            self.surf_volume=pygame.Surface(self.panel_size)
+            self.surf_msg=pygame.Surface((self.window_size[0],self.panel_font_size+10))
+            
             self.mask_alpha=90 # 0~255
             self.mask_instance=0 # currently active mask
             self.last_change_time={"mask_alpha":0,
@@ -50,7 +52,7 @@ if __name__=="__main__": # prevent that multiple pygame windows are opened from 
             self.isKeyDown={} # eg. enums.LMB->True, pygame.K_s->False
 
             self.screen = pygame.display.set_mode(self.window_size)
-            pygame.display.set_caption("Segment Thor")
+            pygame.display.set_caption("Segment Thor beta")
             icon = pygame.image.load("icon.jpg")
             pygame.display.set_icon(icon)
 
@@ -62,6 +64,13 @@ if __name__=="__main__": # prevent that multiple pygame windows are opened from 
             #! Fix me: to remove
             self.test()
 
+            def checkParsed():
+                q:mp.Queue=self.queues.get(self.frame,False)
+                if q and q.full(): # when q == False, it skips the check of q.full()
+                    self.predictors[self.frame]=q.get()
+                    q.get() # clear the queue
+                    self.hasParsed[self.frame]=1
+                    self.msgs[self.frame]=f"The image embedding of frame {self.frame+1} has been computed" 
 
             running = True
             while running:
@@ -74,11 +83,12 @@ if __name__=="__main__": # prevent that multiple pygame windows are opened from 
                             self.isKeyDown[event.button]=False
 
                         case pygame.MOUSEBUTTONDOWN:
-                            self.isKeyDown[event.button]=True
-                            if event.button in [4,5]: # mouse wheel
-                                hotkeys.throughSlices(self,event)
-                            elif event.button in [1,3]: # LMB, RMB
-                                hotkeys.hotkeys_mouse(self,event)
+                            if self.frame!=-1: # ensure an image has been loaded
+                                self.isKeyDown[event.button]=True
+                                if event.button in [4,5]: # mouse wheel
+                                    hotkeys.throughSlices(self,event)
+                                elif event.button in [1,3]: # LMB, RMB
+                                    hotkeys.hotkeys_mouse(self,event)
 
                         case pygame.DROPFILE:
                             path = event.file
@@ -89,26 +99,22 @@ if __name__=="__main__": # prevent that multiple pygame windows are opened from 
                             self.isKeyDown[event.key]=False
 
                         case pygame.KEYDOWN:
-                            self.isKeyDown[event.key]=True
-                            if self.frame!=-1:
-                                hotkeys.hotkeys_keyboard(self,event)
+                            if self.frame!=-1: # ensure an image has been loaded
+                                self.isKeyDown[event.key]=True
+                                if self.frame!=-1:
+                                    hotkeys.hotkeys_keyboard(self,event)
 
                 match self.mode:
                     case enums.ZOOMPAN:
                         hotkeys.pan(self)
                         hotkeys.zoom(self)
                     case enums.SEGMENT:
-                        q:mp.Queue=self.queues.get(self.frame,False)
-                        if q and q.full(): # when q == False, it skips the check of q.full()
-                            self.predictors[self.frame]=q.get()
-                            q.get() # clear the queue
-                            self.hasParsed[self.frame]=1
-
                         # disable previewMask() when there has been one control point for the current active mask
                         # ensure the image embedding has been prepared
                         if self.get_nctrlpnts(self.mask_instance)==0 and self.hasParsed[self.frame]:
                             self.previewMask()
-                
+
+                checkParsed()
                 hotkeys.adjustMaskAlpha(self)
                 pygame.display.flip()
 
@@ -191,9 +197,12 @@ if __name__=="__main__": # prevent that multiple pygame windows are opened from 
                 
                 every mask corresponds to one particular mask_instance
                     and one set of positive and negative control points
+
+                msgs={frame:str}
                 '''
                 self.masks={}
                 self.ctrlpnts={}
+                self.msgs={}
                 for i in range(self.nframes):
                     self.ctrlpnts[i]=[{
                         "pos":[],
@@ -201,6 +210,7 @@ if __name__=="__main__": # prevent that multiple pygame windows are opened from 
                     }]
                     
                     self.masks[i]=[]
+                    self.msgs[i]=""
 
 
                 # whether the embedding of frames have been computed
@@ -222,15 +232,14 @@ if __name__=="__main__": # prevent that multiple pygame windows are opened from 
         def update_slc_size(self):
             self.slc_size=self.img_size*self.resize_factor
 
-        # display a message in bottom of the screen
+        # to display a prompt before any image is loaded in bottom of the screen
+        # The first element of `offset` is ignored
         def dispMsg(self,msg,offset=(0,0)):
-            # TODO:
-            # def clearRemider()
-            # when absolute location is provided, ignore `offset`
+            msg_width,_=self.msg_font.size(msg)
             msg = self.msg_font.render(msg, True, self.panel_color)
             [width,height]=self.window_size
             self.screen.blit(msg,
-                            (width/3+offset[0],
+                            (width/2-msg_width/2, # make sure the message is always in center horizontally
                             height/2+offset[1]))
 
 
@@ -240,13 +249,16 @@ if __name__=="__main__": # prevent that multiple pygame windows are opened from 
             # you should call this function
 
             def renderSliceNumber():
-                [width,height]=self.slc_size
-                font_size=20 # should be the same as self.panel_font
-                loc_slc_number=(width/2+self.loc_slice[0],
-                                height+self.loc_slice[1]+font_size/2)
                 color = "yellow"
-                slice_number = f"{(1+self.frame)}/{self.nframes}"
-                slice_number = self.panel_font.render(slice_number, True, color)
+                slice_number_text = f"{(1+self.frame)}/{self.nframes}"
+                msg_width,_=self.panel_font.size(slice_number_text)
+                [width,height]=self.slc_size
+                window_width,_=self.window_size
+                slice_number = self.panel_font.render(slice_number_text, True, color)
+                font_size=20 # should be the same as self.panel_font
+                loc_slc_number=(self.loc_slice[0]+width/2-msg_width/2,
+                                height+self.loc_slice[1]+font_size/2)
+
                 # erase old slice number
                 pygame.draw.rect(self.screen, self.BGCOLOR, (self.loc_slice[0],self.loc_slice[1]+height,width,font_size+10))
                 self.screen.blit(slice_number,loc_slc_number)
@@ -278,43 +290,61 @@ if __name__=="__main__": # prevent that multiple pygame windows are opened from 
                     slc.set_alpha(self.mask_alpha)
                     self.screen.blit(slc, self.loc_slice)
 
+            def renderPanel(panel):
+                match panel:
+                    case "volume":
+                        surf=self.surf_volume
+                        num=0
+                        for masks_of_frame in self.masks.values():
+                            for mask in masks_of_frame:
+                                num+=mask.sum()
+                        self.volume=self.voxel_size*num
+                        text=f"Volume: {self.volume:.2f} mm3"
+                    case "mode":
+                        text=f"Mode: {self.mode}"
+                        surf=self.surf_mode
+                    case "msg":
+                        text=self.msgs[self.frame]
+                        surf=self.surf_msg
+                text = self.panel_font.render(text, True, self.panel_color)
+                surf.fill(self.BGCOLOR)
+                surf.blit(text,(0,0)) # display text on the panel
+                self.screen.blit(surf,self.panel_dests[panel]) # draw the panel on the screen
+            
+            def render():
+                # ensure it's gray scale
+                # shape: (Height, Width, Channels)
+                self.slc = np.repeat(self.data[..., self.frame, None], 3, axis=2)
+                self.surf_slc = pygame.surfarray.make_surface(self.slc)
+                self.surf_slc = pygame.transform.scale(self.surf_slc, self.slc_size)
+                self.screen.blit(self.surf_slc, self.loc_slice)
+            
+            # def renderMsg():
+            #     msg=self.msgs.get(self.frame)
+            #     if msg:
+            #         msg_width,_=self.msg_font.size(msg)
+            #         msg = self.msg_font.render(msg, True, self.panel_color)
+            #         # offset=(0,self.window_size[1]/2-self.msg_font_size-10) # distance from the bottom: size+10
+            #         # self.dispMsg(msg,offset)
+            #         [width,height]=self.window_size
+            #         self.screen.blit(msg,
+            #                         (width/2-msg_width/2, # make sure the message is always in center horizontally
+            #                         height/2+offset[1]))
+
             def clearSlice():
                 # self.surf_slc.fill(self.BGCOLOR)
                 self.screen.fill(self.BGCOLOR)
 
             clearSlice()
-
-            # ensure it's gray scale
-            # shape: (Height, Width, Channels)
-            self.slc = np.repeat(self.data[..., self.frame, None], 3, axis=2)
-            self.surf_slc = pygame.surfarray.make_surface(self.slc)
-            self.surf_slc = pygame.transform.scale(self.surf_slc, self.slc_size)
-            self.screen.blit(self.surf_slc, self.loc_slice)
+            render()
 
             # render other items on top
             renderMask()
             renderSliceNumber()
             renderCtrlPnts()
-            self.renderPanel("mode")
-            self.renderPanel("volume")
-
-        def renderPanel(self,panel):
-            match panel:
-                case "volume":
-                    surf=self.surf_volume
-                    num=0
-                    for masks_of_frame in self.masks.values():
-                        for mask in masks_of_frame:
-                            num+=mask.sum()
-                    self.volume=self.voxel_size*num
-                    text=f"Volume: {self.volume:.2f} mm3"
-                case "mode":
-                    text=f"Mode: {self.mode}"
-                    surf=self.surf_mode
-            text = self.panel_font.render(text, True, self.panel_color)
-            surf.fill(self.BGCOLOR)
-            surf.blit(text,(0,0)) # display text on the panel
-            self.screen.blit(surf,self.panel_dests[panel]) # draw the panel on the screen
+            renderPanel("mode")
+            renderPanel("volume")
+            renderPanel("msg")
 
         # I'm surprised that python supports variable as default parameter for function
         def get_nctrlpnts(self, inst):
