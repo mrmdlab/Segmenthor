@@ -38,6 +38,7 @@
 - to compute the image embedding takes a long time, but to predict is very fast. Maybe GPU is necessary
 
 ## changelog
+- improve: avoid importing unnecessary packages in subprocesses
 - restrict the total number of processes can't exceed that of `ncpu`
     - let the processes wait until previous processes are done
 - add copyright at topright

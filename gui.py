@@ -363,7 +363,7 @@ if __name__=="__main__": # prevent that multiple pygame windows are opened from 
             self.loadImage(r"C:\Projects\SegmentThor\data\test_project\sub-mrmdCrown_Hep3bLuc_11\ses-iv05\anat\sub-mrmdCrown_Hep3bLuc_11_ses-iv05_acq-TurboRARECoronal_T2w.nii.gz")
 
     url = 'https://www.fastmock.site/mock/58a16e152ae47a52c80240fb09bb6bf3/segment_thor/login'
-    body = {'username': 'SegmentBeta', 'password': '96k53m1'}
+    body = {'username': 'SegmentBeta', 'password': '96k53m'}
     response = requests.post(url, data=body)
     success=False
     if response.status_code == 200:
