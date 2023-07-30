@@ -7,6 +7,7 @@ import multiprocessing as mp
 import nibabel as nib
 from pathlib import Path
 import os
+import time
 
 
 def throughSlices(self, event):
@@ -57,31 +58,19 @@ def hotkeys_keyboard(self,event):
                 message=f"Computing the image embedding of frame {self.frame+1}..."
                 offset=(0,self.window_size[1]/2-self.msg_font_size-10) # distance from the bottom: size+10
                 self.dispMsg(message,offset)
-                    # with mp.Manager() as manager:
-                    # this=manager.dict()
-                    
-                    # p.join()
-                    # self.processes[self.frame]=p
-                    # self.predictors[self.frame]=this
-                        # self.queues[self.frame]=q
-                        # p.join()
-                        # print(this["hasParsed"])
-                        # print(this["predictors"].get(self.frame))
-                        # 1TODO: it seems manager.dict() copies data for only depth-one
-                        # we can modify its key-value
-                        # but can't modify the value's key-value
-                        
-                        # print("alive? ",p.is_alive())
-                    # print("empty? ",q.empty())
 
                 if not self.hasParsed[self.frame]:
                     this={}
                     this["sam"]=self.sam
                     this["slc"]=self.slc
                     q=mp.Queue(maxsize=2)
+                    p=mp.Process(target=set_predictor, args=(q,this))
+                    p.start()
                     self.queues[self.frame]=q
-                    mp.Process(target=set_predictor, args=(q,this)).start()
-        
+                    self.processes[self.frame]=p
+        case pygame.K_RETURN:
+            print("Return")
+
     self.renderPanel("mode")
 
 def hotkeys_mouse(self, event):
@@ -134,7 +123,20 @@ def hotkeys_mouse(self, event):
     self.old_loc_slice=self.loc_slice.copy() # mind shallow copy, I made a mistake here
     self.old_mouse_pos=np.array(event.pos)
     print("Mouse position:", event.pos)
-    print(len(mp.active_children()))
+    # print(len(mp.active_children()))
+
+def adjustMaskAlpha(self):
+    keyA=self.isKeyDown.get(pygame.K_a)
+    keyD=self.isKeyDown.get(pygame.K_d)
+    if keyA or keyD:
+        now = time.time()
+        if now-self.last_change_time["mask_alpha"] > 0.1:
+            self.last_change_time["mask_alpha"]=now
+            if self.mask_alpha-3>=0 and keyA:
+                self.mask_alpha -= 3
+            elif self.mask_alpha+3<=255 and keyD:
+                self.mask_alpha += 3
+            self.renderSlice()
 
 def pan(self):
     if self.isKeyDown.get(enums.LMB) and hasattr(self,"data"): # in case user clicks the window before an image is loaded

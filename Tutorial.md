@@ -19,8 +19,8 @@
 ### hotkeys
 | hotkey | explanation                |
 | ------ | -------------------------- |
-| A      | decrease mask transparency |
-| D      | increase mask transparency |
+| A      | increase mask transparency |
+| D      | decrease mask transparency |
 | S      | change to SEGMENT Mode     |
 | Z      | change to ZOOMPAN Mode     |
 | Tab    | go through mask instances  |

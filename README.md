@@ -1,7 +1,8 @@
 ## todo
 
 ### IMPORTANT
-- Fix bug: before image is loaded, shouldn't allow user to go through slices (self.frame undefined)
+- restrict the total number of processes can't exceed that of `ncpu`
+- to start a subprocess makes the main process temporarily blocked. To solve the problem, I should set a hotkey `Enter` to start all the subprocesses.
 - display a message after mask is saved successfully
 - don't compute image embedding unless `S` is pressed. User can quickly go through all the slices and identify which slices have tumor. Then enter SEGMENT mode. then press `S` at every slice that has tumor. For example, if 6 slices have tumor, enter SEGMENT mode, press `S` at each of the 6 slices. Computation will be done in multiple processes (i.e. in parallel). They should be done at about the same time.
 - Fix bug: when going to SEGMENT, then ZOOMPAN, then SEGMENT again, shouldn't compute embedding twice
@@ -11,10 +12,7 @@
     - image embedding of slice n is ready (how many seconds)
     - Fix bug: should always display the correct message when going through other slices. Don't let it disappear too early
 - what parameters need to be renewed when loading a new image?
-    - Fix bug: display message about the progress of computing image embedding for different slices
-- Fix bug: when cursor is outside the slice, disable previewMask()
-- Fix bug: change color of old masks immediately when a new mask instance is created
-
+- Fix bug: display message about the progress of computing image embedding for different slices
 - Ctrl+Z, undo one control point
     - when undo the first operation, don't predict mask, becasue there're no more control points
 - Ctrl+Y, redo (undo the previous "undo")
@@ -24,17 +22,17 @@
     - `self.surf_volume` done
     - `self.surf_msg`
 - is it possible to save image embedding? How long does it take to load?
-- use A and D to change the mask_alpha for all masks
-- deal with multiple tumors. i.e. allow predict a new mask rather than user has to use all control points for one single mask
 - if computing image embedding takes too long, we can compute it in advance. ie. let it run overnight
 - shouldn't compute image embedding repeatedly. ie. cache the image embedding
 - display a reminder when it's computing the embedding of the image. Need to display which frame is being calculated
 - encrypt software
     - fast mock account verification
+    - Nuitka compilation
 - allow user to do other stuff, like zoom, pan, going through slices, while calculating the image embedding
  
 
 ### OTHERS
+- Fix bug: when cursor is outside the slice, disable previewMask()
 - Fix bug: even though one slice was previously parsed (embedding done), the old embedding has been abandoned. It shouldn't be allowed to preview or predict (add new control points)
 - Add munual fine editing of masks
 - support multiple labels. eg. segment liver and lung with different labels
@@ -42,10 +40,6 @@
 - MPR rendering, multi-planar reformation
 - MIP rendering, maximum intensity projection，MIP
 - deal with anisotropic pixels
-- hotkeys
-    - change mask transparency
-- multiple threads
-- multiple processes
 - iterative predication?
 - why the "computing image embedding" message disappears when I click or change to other slice?
 - adjust brightness
@@ -53,15 +47,16 @@
 - cross hair
 - fix bug: if drag two files?
 - rotation of boundary box? Is it supported by SAM?
-- optimization: faster
-    - compute image embedding in another process, instead of another thread, in order to exploit CPU power
-    - simultaneously compute embedding in different processes
-    - may be possible to load predictor in another process, to make the software start faster
 
 ## thoughts
 - to compute the image embedding takes a long time, but to predict is very fast. Maybe GPU is necessary
 
 ## changelog
+- deal with multiple tumors. i.e. allow predict a new mask rather than user has to use all control points for one single mask
+- Fix bug: change color of old masks immediately when a new mask instance is created
+- Fix bug: before image is loaded, shouldn't allow user to go through slices (self.frame undefined)
+- use A and D to change the mask_alpha for all masks
+- Fix bug: what if press `S` before loading an image
 - refactor: control_points
     - set a hotkey for making a new mask
     - use different color to indicate the active instance and others (inactive: green, active: red)

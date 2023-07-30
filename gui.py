@@ -93,45 +93,13 @@ if __name__=="__main__": # prevent that multiple pygame windows are opened from 
                             if self.frame!=-1:
                                 hotkeys.hotkeys_keyboard(self,event)
 
-                # Hotkeys for A, D
-                # ! Fix me: hotkeys not working
-                # ! Fix me: change to self.last_change_time["mask_alpha"]
-                # now = time.time()
-                # if now-self.mask_alpha_lct > 0.2:
-                #     self.mask_alpha_lct=now
-                #     # print("D")
-                #     print(keys[pygame.K_d])
-                # if keys[pygame.K_d]:
-                #     now = time.time()
-                #     print("D")
-                #     # in one second, value changes at most 5
-                #     if now-self.mask_alpha_lct > 0.2 and self.mask_alpha+1<=255:
-                #         self.mask_alpha += 1
-                        # self.mask_alpha_lct=now
-                # elif keys[pygame.K_a]:
-                #     print("A")
-                #     now = time.time()
-                #     if now-self.mask_alpha_lct > 0.2 and self.mask_alpha-1>=0:
-                #         self.mask_alpha -= 1
-                #         self.mask_alpha_lct=now
-
                 match self.mode:
                     case enums.ZOOMPAN:
                         hotkeys.pan(self)
                         hotkeys.zoom(self)
                     case enums.SEGMENT:
-                        # check whether the image embedding has been parsed
-                        # q=self.queues.get(self.frame)
-                        # !Fix me: it happens that before the subprocess gets the object,
-                        #  the object has been got by the main process
-
-                        # if (not self.hasParsed[self.frame]) and \
-                        #    (not self.processes[self.frame].is_alive()):
-                        #     print("done")
                         q:mp.Queue=self.queues.get(self.frame,False)
-                        if q and q.full():
-                            # this=self.predictors[self.frame]
-                            # self.predictors[self.frame]=this["predictor"]
+                        if q and q.full(): # when q == False, it skips the check of q.full()
                             self.predictors[self.frame]=q.get()
                             q.get() # clear the queue
                             self.hasParsed[self.frame]=1
@@ -140,6 +108,8 @@ if __name__=="__main__": # prevent that multiple pygame windows are opened from 
                         # ensure the image embedding has been prepared
                         if self.get_nctrlpnts(self.mask_instance)==0 and self.hasParsed[self.frame]:
                             self.previewMask()
+                
+                hotkeys.adjustMaskAlpha(self)
                 pygame.display.flip()
 
             pygame.quit()
@@ -180,8 +150,8 @@ if __name__=="__main__": # prevent that multiple pygame windows are opened from 
                 self.mode=enums.ZOOMPAN # when loading a new image, set ZOOMPAN mode by default
 
                 self.predictors={} # {frame:SamPredictor}
-                # self.processes:dict[int,mp.Process]={} # {frame: mp.Process}
-                self.queues={} #{frame:mp.Queue}
+                self.processes:dict[int,mp.Process]={} # {frame: mp.Process}
+                self.queues:dict[int,mp.Process]={} #{frame:mp.Queue}
                 self.screen.fill(self.BGCOLOR)
 
                 img = nib.load(path)
