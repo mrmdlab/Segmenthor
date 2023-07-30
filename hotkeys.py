@@ -4,6 +4,7 @@ import numpy as np
 import enums
 import pygame
 import multiprocessing as mp
+from threading import Timer
 import nibabel as nib
 from pathlib import Path
 import os
@@ -79,14 +80,25 @@ def hotkeys_keyboard(self,event):
                 result = result and (not self.hasParsed[frame])
                 result = result and (not p.is_alive())
                 return result
-            for frame,p in self.processes.items():
-                if condition():
-                    self.msgs[frame]=f"The image embedding of frame {self.frame+1} is being computed..."
-            self.renderSlice()
-            pygame.display.flip()
-            for frame,p in self.processes.items():
-                if condition():
+            def delayStart(p):
+                # If the number of current processes exceeds ncpu, launch other processes later
+                if len(mp.active_children)<=self.ncpu:
+                # TODO: for trial version, disable parallel computing
+                # if len(mp.active_children())<1:
                     p.start()
+                else:
+                    Timer(5,delayStart,args=(p,)).start()
+            
+            # prevent user form pressing `Enter` too often, otherwise a subprocess may be launched twice
+            if len(mp.active_children())==0:
+                for frame,p in self.processes.items():
+                    if condition():
+                        self.msgs[frame]=f"The image embedding of frame {self.frame+1} is being computed..."
+                self.renderSlice()
+                pygame.display.flip()
+                for frame,p in self.processes.items():
+                    if condition():
+                        delayStart(p)
 
     self.renderSlice()
 
@@ -208,35 +220,3 @@ def set_predictor(q,this):
     # in main process, check q.full() to know whether the task is done
     q.put(predictor)
     q.put("done")
-
-# def set_predictor(q):
-#     from segment_anything import SamPredictor
-
-#     this=q.get()
-#     frame=this["frame"]
-#     # TODO: for trial version, restrict the ncpu to be 2
-#     # TODO: make sure the total number of processes shouldn't exceed ncpu
-#     # maybe should check that before calling this method
-#     if len(this["predictors"])<this["ncpu"]:
-#         this["predictors"][frame] = SamPredictor(this["sam"])
-#         print("begin computing",frame+1)
-#     else:
-#         # ! Fix me:
-#         # ! to make sure it's safe, can't reset the image until the previous image has been parsed
-#         print("predictors will exceed the number of CPUs!")
-#         print("Press `Shift+S` to force doing this")
-#         # TODO: set hotkey for Shift+S
-#         # this will replace the image of oldest predictor, set it to the current image
-#         # ! Fix me: shouldn't do this!
-#         # Instead, it should wait until any frame has been parsed
-#         # and then one more CPU is available
-#         # but this will add to workload of RAM
-#         # TODO: why not simply use the Queue model
-#         # TODO: and let extra slice images to queue before they can be parsed?
-#         this["predictors"][frame]=this["predictors"].popitem(False) # FIFO
-#         print("Here should change the message for the affected slice")
-#     this["predictors"][frame]
-#     # !Fix me: display the message on the screen
-#     print(f"Image embedding of frame {frame+1} has been computed")
-
-    

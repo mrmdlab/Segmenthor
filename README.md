@@ -3,9 +3,6 @@
 ### IMPORTANT
 - Ctrl+Z, undo one control point
     - when undo the first operation, don't predict mask, becasue there're no more control points
-- restrict the total number of processes can't exceed that of `ncpu`
-    - in fact, no need to limit the slices to be parsed. If it exceeds ncpu, it will be slow, but it has to wait longer.
-    - let the processes wait until previous processes are done
 - encrypt software
     - fast mock account verification
     - Nuitka compilation
@@ -26,7 +23,6 @@
 - Fix bug: when cursor is outside the slice, disable previewMask()
 - Add munual fine editing of masks
 - support multiple labels. eg. segment liver and lung with different labels
-- refactor: text should be put in a container to easy display
 - MPR rendering, multi-planar reformation
 - MIP rendering, maximum intensity projection，MIP
 - deal with anisotropic pixels
@@ -42,6 +38,8 @@
 - to compute the image embedding takes a long time, but to predict is very fast. Maybe GPU is necessary
 
 ## changelog
+- restrict the total number of processes can't exceed that of `ncpu`
+    - let the processes wait until previous processes are done
 - add copyright at topright
 - allow user to do other stuff, like zoom, pan, going through slices, while calculating the image embedding
 - Fix bug: what if add more frames to the list after the previous list has begun

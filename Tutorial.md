@@ -6,6 +6,7 @@
 
 ### reminder
 - Disable Chinese input method, if any, before using this software
+- Don't press Enter too often.
 
 ### ZOOMPAN
 - left mouse button to pan
