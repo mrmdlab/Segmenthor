@@ -1,6 +1,8 @@
 ## todo
 
 ### IMPORTANT
+- Ctrl+Z, undo one control point
+    - when undo the first operation, don't predict mask, becasue there're no more control points
 - restrict the total number of processes can't exceed that of `ncpu`
     - in fact, no need to limit the slices to be parsed. If it exceeds ncpu, it will be slow, but it has to wait longer.
     - let the processes wait until previous processes are done
@@ -12,8 +14,6 @@
 - Fix bug: when going to SEGMENT, then ZOOMPAN, then SEGMENT again, shouldn't compute embedding twice
 - what parameters need to be renewed when loading a new image?
 - Fix bug: display message about the progress of computing image embedding for different slices
-- Ctrl+Z, undo one control point
-    - when undo the first operation, don't predict mask, becasue there're no more control points
 - Ctrl+Y, redo (undo the previous "undo")
 - is it possible to save image embedding? How long does it take to load?
 - if computing image embedding takes too long, we can compute it in advance. ie. let it run overnight
@@ -24,7 +24,6 @@
 ### OTHERS
 - render mask, control points on `self.surf_slc` instead of on `self.screen`
 - Fix bug: when cursor is outside the slice, disable previewMask()
-- Fix bug: even though one slice was previously parsed (embedding done), the old embedding has been abandoned. It shouldn't be allowed to preview or predict (add new control points)
 - Add munual fine editing of masks
 - support multiple labels. eg. segment liver and lung with different labels
 - refactor: text should be put in a container to easy display
@@ -43,6 +42,7 @@
 - to compute the image embedding takes a long time, but to predict is very fast. Maybe GPU is necessary
 
 ## changelog
+- add copyright at topright
 - allow user to do other stuff, like zoom, pan, going through slices, while calculating the image embedding
 - Fix bug: what if add more frames to the list after the previous list has begun
 - Fix bug: what if press `Return` multiple times?

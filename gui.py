@@ -27,6 +27,7 @@ if __name__=="__main__": # prevent that multiple pygame windows are opened from 
             self.panel_dests={
                 "mode":(15*1,15),
                 "volume":(15*11,15),
+                "copyright":(15*21,15),
                 "msg":(0,self.window_size[1]-40)
             }
             self.panel_color = "yellow"
@@ -39,6 +40,7 @@ if __name__=="__main__": # prevent that multiple pygame windows are opened from 
             
             self.surf_mode=pygame.Surface(self.panel_size)
             self.surf_volume=pygame.Surface(self.panel_size)
+            self.surf_copyright=pygame.Surface((350,20))
             self.surf_msg=pygame.Surface((self.window_size[0],self.panel_font_size+10))
             
             self.mask_alpha=90 # 0~255
@@ -303,6 +305,9 @@ if __name__=="__main__": # prevent that multiple pygame windows are opened from 
                     case "mode":
                         text=f"Mode: {self.mode}"
                         surf=self.surf_mode
+                    case "copyright":
+                        text="© Magnetic Resonance Methods Development 2023"
+                        surf=self.surf_copyright
                     case "msg":
                         text=self.msgs[self.frame]
                         surf=self.surf_msg
@@ -344,6 +349,7 @@ if __name__=="__main__": # prevent that multiple pygame windows are opened from 
             renderCtrlPnts()
             renderPanel("mode")
             renderPanel("volume")
+            renderPanel("copyright")
             renderPanel("msg")
 
         # I'm surprised that python supports variable as default parameter for function
