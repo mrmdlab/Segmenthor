@@ -45,7 +45,6 @@ if __name__=="__main__": # prevent that multiple pygame windows are opened from 
             self.surf_msg=pygame.Surface((self.window_size[0],self.panel_font_size+10))
             
             self.mask_alpha=90 # 0~255
-            self.mask_instance=0 # currently active mask
             self.last_change_time={"mask_alpha":0,
                                 "mask_preview":0}
 
@@ -64,8 +63,8 @@ if __name__=="__main__": # prevent that multiple pygame windows are opened from 
             self.main()
 
         def main(self):
-            #! Fix me: to remove
-            self.test()
+            #! to remove
+            # self.test()
 
             def checkParsed():
                 q:mp.Queue=self.queues.get(self.frame,False)
@@ -102,10 +101,9 @@ if __name__=="__main__": # prevent that multiple pygame windows are opened from 
                             self.isKeyDown[event.key]=False
 
                         case pygame.KEYDOWN:
+                            self.isKeyDown[event.key]=True
                             if self.frame!=-1: # ensure an image has been loaded
-                                self.isKeyDown[event.key]=True
-                                if self.frame!=-1:
-                                    hotkeys.hotkeys_keyboard(self,event)
+                                hotkeys.hotkeys_keyboard(self,event)
 
                 match self.mode:
                     case enums.ZOOMPAN:
@@ -174,6 +172,7 @@ if __name__=="__main__": # prevent that multiple pygame windows are opened from 
                 self.mask_header = img.header
                 self.mask_header.set_data_dtype(np.uint8) # shrink file size
                 self.mask_affine=img.affine
+                self.mask_instance=0 # currently active mask
 
                 pixdim=img.header.get("pixdim")
                 self.voxel_size=pixdim[1]*pixdim[2]*pixdim[3] # mm^3
@@ -226,7 +225,7 @@ if __name__=="__main__": # prevent that multiple pygame windows are opened from 
 
                 # upper left corner of the slice to be rendered
                 # make the slice in the center of the window
-                # First declaration
+                # First declaration of `self.loc_slice`
                 self.loc_slice: np.ndarray =(self.window_size/2-self.slc_size/2)
                 self.renderSlice()
             else:
@@ -256,7 +255,6 @@ if __name__=="__main__": # prevent that multiple pygame windows are opened from 
                 slice_number_text = f"{(1+self.frame)}/{self.nframes}"
                 msg_width,_=self.panel_font.size(slice_number_text)
                 [width,height]=self.slc_size
-                window_width,_=self.window_size
                 slice_number = self.panel_font.render(slice_number_text, True, color)
                 font_size=20 # should be the same as self.panel_font
                 loc_slc_number=(self.loc_slice[0]+width/2-msg_width/2,

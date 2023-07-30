@@ -6,16 +6,7 @@
 - encrypt software
     - fast mock account verification. done
     - Nuitka compilation
-- don't compute image embedding unless `S` is pressed. User can quickly go through all the slices and identify which slices have tumor. Then enter SEGMENT mode. then press `S` at every slice that has tumor. For example, if 6 slices have tumor, enter SEGMENT mode, press `S` at each of the 6 slices. Computation will be done in multiple processes (i.e. in parallel). They should be done at about the same time.
-- Fix bug: when going to SEGMENT, then ZOOMPAN, then SEGMENT again, shouldn't compute embedding twice
-- what parameters need to be renewed when loading a new image?
-- Fix bug: display message about the progress of computing image embedding for different slices
 - Ctrl+Y, redo (undo the previous "undo")
-- is it possible to save image embedding? How long does it take to load?
-- if computing image embedding takes too long, we can compute it in advance. ie. let it run overnight
-- shouldn't compute image embedding repeatedly. ie. cache the image embedding
-- display a reminder when it's computing the embedding of the image. Need to display which frame is being calculated
- 
 
 ### OTHERS
 - render mask, control points on `self.surf_slc` instead of on `self.screen`
@@ -32,11 +23,17 @@
 - cross hair
 - fix bug: if drag two files?
 - rotation of boundary box? Is it supported by SAM?
+- if computing image embedding takes too long, we can compute it in advance. ie. let it run overnight
+    - is it possible to save image embedding? How long does it take to load?
 
 ## thoughts
 - to compute the image embedding takes a long time, but to predict is very fast. Maybe GPU is necessary
 
 ## changelog
+- move `self.mask_instance` to `self.loadImage()`
+- message f"Removed frame {self.frame+1} from the list" will disappear after 4 seconds
+- what parameters need to be renewed when loading a new image?
+- Fix bug: when going to SEGMENT, then ZOOMPAN, then SEGMENT again, shouldn't compute embedding twice
 - display a message temporarily after mask is saved successfully
 - improve: avoid importing unnecessary packages in subprocesses
 - restrict the total number of processes can't exceed that of `ncpu`

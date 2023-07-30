@@ -69,6 +69,9 @@ if not os.getenv("subprocess"):
                             self.msgs[self.frame]=f"Removed frame {self.frame+1} from the list"
                             self.queues.pop(self.frame)
                             self.processes.pop(self.frame)
+                            def restoreMsg(frame):
+                                self.msgs[frame]=""
+                            Timer(4,restoreMsg,args=(self.frame,)).start()
                     else:
                         self.msgs[self.frame]=f"Ready to compute the image embedding of frame {self.frame+1}..."
                         this={}
