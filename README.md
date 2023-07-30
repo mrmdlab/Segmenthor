@@ -4,9 +4,8 @@
 - Ctrl+Z, undo one control point
     - when undo the first operation, don't predict mask, becasue there're no more control points
 - encrypt software
-    - fast mock account verification
+    - fast mock account verification. done
     - Nuitka compilation
-- display a message after mask is saved successfully
 - don't compute image embedding unless `S` is pressed. User can quickly go through all the slices and identify which slices have tumor. Then enter SEGMENT mode. then press `S` at every slice that has tumor. For example, if 6 slices have tumor, enter SEGMENT mode, press `S` at each of the 6 slices. Computation will be done in multiple processes (i.e. in parallel). They should be done at about the same time.
 - Fix bug: when going to SEGMENT, then ZOOMPAN, then SEGMENT again, shouldn't compute embedding twice
 - what parameters need to be renewed when loading a new image?
@@ -38,6 +37,7 @@
 - to compute the image embedding takes a long time, but to predict is very fast. Maybe GPU is necessary
 
 ## changelog
+- display a message temporarily after mask is saved successfully
 - improve: avoid importing unnecessary packages in subprocesses
 - restrict the total number of processes can't exceed that of `ncpu`
     - let the processes wait until previous processes are done

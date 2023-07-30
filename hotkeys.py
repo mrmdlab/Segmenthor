@@ -56,13 +56,9 @@ if not os.getenv("subprocess"):
                 self.mode = enums.ZOOMPAN
             case pygame.K_s:
                 if pygame.key.get_mods() & pygame.KMOD_CTRL: # Ctrl+S
-                    # TODO: display save mask successfully message temporarily
-                    # and then display the previous message
-                    # may use a thread
                     saveMask(self)
                 else: # S
                     self.mode = enums.SEGMENT
-                    # TODO: shouldn't exceed ncpu
                     p=self.processes.get(self.frame)
                     if self.hasParsed[self.frame]:
                         self.msgs[self.frame]=f"The image embedding of frame {self.frame+1} has been computed"
@@ -135,7 +131,7 @@ if not os.getenv("subprocess"):
             point_coords=np.array(pos_ctrlpnts+neg_ctrlpnts)[:,::-1]
             point_labels=np.array([1]*len(pos_ctrlpnts)+[0]*len(neg_ctrlpnts))
 
-            # ! Fix me: maybe try iterative prediction?
+            # TODO: maybe try iterative prediction?
             predicted_masks, scores, _ = self.predictors[self.frame].predict(point_coords,
                                                                             point_labels)
             predicted_mask=predicted_masks[scores.argmax()].astype(np.uint8)
@@ -220,7 +216,14 @@ if not os.getenv("subprocess"):
         # TODO: user may want to save individual masks for every tumor
         os.makedirs(path.parent,exist_ok=True) # ensure the folder exists
         nib.save(mask,path)
-        print("mask is saved successfully to:\n",path)
+        msg=f"mask is saved successfully to:\n{path}"
+        print(msg)
+        old_msg=self.msgs[self.frame]
+        self.msgs[self.frame]=msg
+        def restoreMsg():
+            self.msgs[self.frame]=old_msg
+        # message is displayed for 10 seconds, then disappear
+        Timer(10,restoreMsg).start()
 
 # avoid importing unnecessary packages in subprocesses
 os.environ["subprocess"]="1"

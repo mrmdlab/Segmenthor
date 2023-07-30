@@ -312,10 +312,12 @@ if __name__=="__main__": # prevent that multiple pygame windows are opened from 
                     case "msg":
                         text=self.msgs[self.frame]
                         surf=self.surf_msg
-                text = self.panel_font.render(text, True, self.panel_color)
                 surf.fill(self.BGCOLOR)
-                surf.blit(text,(0,0)) # display text on the panel
-                self.screen.blit(surf,self.panel_dests[panel]) # draw the panel on the screen
+                _,height=self.panel_font.size(text)
+                for i,t in enumerate(text.splitlines()):
+                    t = self.panel_font.render(t, True, self.panel_color)
+                    surf.blit(t,(0,i*height)) # display text on the panel. compatible for multiple lines
+                    self.screen.blit(surf,self.panel_dests[panel]) # draw the panel on the screen
             
             def render():
                 # ensure it's gray scale
@@ -324,18 +326,6 @@ if __name__=="__main__": # prevent that multiple pygame windows are opened from 
                 self.surf_slc = pygame.surfarray.make_surface(self.slc)
                 self.surf_slc = pygame.transform.scale(self.surf_slc, self.slc_size)
                 self.screen.blit(self.surf_slc, self.loc_slice)
-            
-            # def renderMsg():
-            #     msg=self.msgs.get(self.frame)
-            #     if msg:
-            #         msg_width,_=self.msg_font.size(msg)
-            #         msg = self.msg_font.render(msg, True, self.panel_color)
-            #         # offset=(0,self.window_size[1]/2-self.msg_font_size-10) # distance from the bottom: size+10
-            #         # self.dispMsg(msg,offset)
-            #         [width,height]=self.window_size
-            #         self.screen.blit(msg,
-            #                         (width/2-msg_width/2, # make sure the message is always in center horizontally
-            #                         height/2+offset[1]))
 
             def clearSlice():
                 # self.surf_slc.fill(self.BGCOLOR)
