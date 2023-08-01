@@ -1,12 +1,37 @@
+## build
+### complete build
+```cmd
+nuitka --standalone ^
+--include-data-files=checkpoints/sam_vit_b.pth=checkpoints/sam_vit_b.pth ^
+--include-data-files=Tutorial.md=Tutorial.md ^
+--include-data-files=icon.jpg=icon.jpg ^
+--windows-icon-from-ico=icon.ico ^
+--include-package-data=pygame ^
+gui.py
+```
+### incremental build (?)
+if no new packages are introduced in the change to the code.
+```cmd
+nuitka --standalone ^
+--output-dir=nuitka_trial ^
+--nofollow-imports ^
+gui.py
+```
+
 ## todo
 
 ### IMPORTANT
+- freeze the conda environment
 - Ctrl+Z, undo one control point
     - when undo the first operation, don't predict mask, becasue there're no more control points
 - encrypt software
     - fast mock account verification. done
     - Nuitka compilation
 - Ctrl+Y, redo (undo the previous "undo")
+- consider saving masks to `derivatives/masks` or in the same folder as the image file
+- cache image embedding in `derivatives/embedding`
+- adjust brightness
+- Fix bug: if multiple mask instances in one slice overlap, the volume displayed may be wrong.
 
 ### OTHERS
 - render mask, control points on `self.surf_slc` instead of on `self.screen`
@@ -18,7 +43,6 @@
 - deal with anisotropic pixels
 - iterative predication?
 - why the "computing image embedding" message disappears when I click or change to other slice?
-- adjust brightness
 - correct orientation, label left, right, etc
 - cross hair
 - fix bug: if drag two files?
@@ -30,6 +54,8 @@
 - to compute the image embedding takes a long time, but to predict is very fast. Maybe GPU is necessary
 
 ## changelog
+- fix bug: need to check whether an image has been loaded before doing `checkParsed()` and `hotkeys.adjustMaskAlpha()` 
+- in `first_launch.cmd` download the model checkpoint
 - move `self.mask_instance` to `self.loadImage()`
 - message f"Removed frame {self.frame+1} from the list" will disappear after 4 seconds
 - what parameters need to be renewed when loading a new image?
@@ -104,9 +130,3 @@
 - display slice number
 - fix bug: new text will be on top of old text
 - feature: drag one nifti file onto the window
-
-## dependencies
-```py
-pip install opencv-python pycocotools matplotlib onnxruntime onnx
-```
-

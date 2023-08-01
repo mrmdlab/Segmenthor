@@ -114,9 +114,9 @@ if __name__=="__main__": # prevent that multiple pygame windows are opened from 
                         # ensure the image embedding has been prepared
                         if self.get_nctrlpnts(self.mask_instance)==0 and self.hasParsed[self.frame]:
                             self.previewMask()
-
-                checkParsed()
-                hotkeys.adjustMaskAlpha(self)
+                if self.frame!=-1:
+                    checkParsed()
+                    hotkeys.adjustMaskAlpha(self)
                 pygame.display.flip()
 
             pygame.quit()
@@ -350,17 +350,22 @@ if __name__=="__main__": # prevent that multiple pygame windows are opened from 
         def test(self):
             self.loadImage(r"C:\Projects\SegmentThor\data\test_project\sub-mrmdCrown_Hep3bLuc_11\ses-iv05\anat\sub-mrmdCrown_Hep3bLuc_11_ses-iv05_acq-TurboRARECoronal_T2w.nii.gz")
 
-    url = 'https://www.fastmock.site/mock/58a16e152ae47a52c80240fb09bb6bf3/segment_thor/login'
-    body = {'username': 'SegmentBeta', 'password': '96k53m'}
-    response = requests.post(url, data=body)
-    success=False
-    if response.status_code == 200:
-        data = response.json()
-        if data['success']:
-            success=True
-            SegmentThor()
-    if not success:
+    def verifyFail():
         with open("SUBSCRIPTION_NEEDED.LOG","w") as f:
             msg="This beta version has expired. Please contact fengh@imcb.a-star.edu.sg for subscription"
             f.write(msg)
             print(msg)
+    try:
+        url = 'https://www.fastmock.site/mock/58a16e152ae47a52c80240fb09bb6bf3/segment_thor/login'
+        body = {'username': 'SegmentBeta', 'password': '96k53m'}
+        response = requests.post(url, data=body)
+        success=False
+        if response.status_code == 200:
+            data = response.json()
+            if data['success']:
+                success=True
+                SegmentThor()
+        if not success:
+            verifyFail()
+    except:
+        verifyFail()
