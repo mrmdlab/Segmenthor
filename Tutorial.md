@@ -1,6 +1,7 @@
 ### Info
 - author: MRMD
 - version: 0.2.0
+    - the previous release was trash
 ### models
 - ViT, vision transformer see [reference](http://arxiv.org/abs/2010.11929)
     - ViT-B, base model
@@ -16,6 +17,7 @@
 - Make sure you have good internet connection. if you still get Internet Fail error, wait for 10 seconds and try again.
 - Disable Chinese input method, if any, before using this software
 - Don't press Enter too often in order to avoid potential bugs
+- it's normal to get unresponding for a few seconds because computing the image embedding takes up a lot of CPU resource. It's more likely to get unresponding if you are running Large model or Huge model
 
 ### ZOOMPAN
 - left mouse button to pan
@@ -30,7 +32,7 @@
 
 ### save mask
 - Data must follow BIDS specification, must include `session` folder. If the NIfTI file you drag and open isn't from a BIDS data folder, you won't be able to save the mask correctly.
-- mask will be saved to `derivatives` folder under your BIDS data folder
+- mask will be saved to `derivatives/masks` folder under your BIDS data folder
 
 ### hotkeys
 | hotkey      | explanation                                               |

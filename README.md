@@ -26,9 +26,6 @@ gui.py
 - freeze the conda environment
 - Ctrl+Z, undo one control point
     - when undo the first operation, don't predict mask, becasue there're no more control points
-- encrypt software
-    - fast mock account verification. done
-    - Nuitka compilation
 - Ctrl+Y, redo (undo the previous "undo")
 - consider saving masks to `derivatives/masks` or in the same folder as the image file
 - cache image embedding in `derivatives/embedding`
@@ -59,6 +56,9 @@ gui.py
 - to compute the image embedding takes a long time, but to predict is very fast. Maybe GPU is necessary
 
 ## changelog
+- encrypt software
+    - fast mock account verification. done
+    - Nuitka compilation
 - control brightness using up, down, left, right. Remember to deal with exceptions
 - fix bug: need to check whether an image has been loaded before doing `checkParsed()` and `hotkeys.adjustMaskAlpha()` 
 - in `first_launch.cmd` download the model checkpoint

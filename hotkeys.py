@@ -10,6 +10,7 @@ def set_predictor(q,this):
     # in main process, check q.full() to know whether the task is done
     q.put(predictor)
     q.put("done")
+    print(f"Done with the image embedding of frame {this['frame']+1}")
 
 if not os.getenv("subprocess"):
     import numpy as np
@@ -77,6 +78,7 @@ if not os.getenv("subprocess"):
                         this={}
                         this["sam"]=self.sam
                         this["slc"]=self.slc
+                        this["frame"]=self.frame
                         q=mp.Queue(maxsize=2)
                         p=mp.Process(target=set_predictor, args=(q,this))
                         self.queues[self.frame]=q
@@ -89,11 +91,12 @@ if not os.getenv("subprocess"):
                     result = result and (not self.hasParsed[frame])
                     result = result and (not p.is_alive())
                     return result
-                def delayStart(p):
+                def delayStart(frame,p):
                     # If the number of current processes exceeds ncpu, launch other processes later
                     if len(mp.active_children())<=self.ncpu:
                     # TODO: for trial version, disable parallel computing
                     # if len(mp.active_children())<1:
+                        print(f"Computing the image embedding of frame {frame+1}")
                         p.start()
                     else:
                         Timer(5,delayStart,args=(p,)).start()
@@ -107,13 +110,20 @@ if not os.getenv("subprocess"):
                     pygame.display.flip()
                     for frame,p in self.processes.items():
                         if condition():
-                            delayStart(p)
+                            delayStart(frame,p)
 
-            case pygame.K_j:
+            case pygame.K_j: # Ctrl+J, restore image
                 if pygame.key.get_mods() & pygame.KMOD_CTRL:
                     self.data=self.data_backup.copy()
                     self.lmt_upper=100
                     self.lmt_lower=0
+            
+            # case pygame.K_z: # Ctrl+Z, undo one control point
+            #     if pygame.key.get_mods() & pygame.KMOD_CTRL:
+            #         instance=self.ctrlpnts[self.frame][self.mask_instance]
+            #         instance["pos"]
+            #         instance["neg"]
+                    
         self.renderSlice()
 
     def hotkeys_mouse(self, event):
@@ -199,7 +209,7 @@ if not os.getenv("subprocess"):
                 setattr(self,lmt,value)
             adjust()
 
-# !Fix me: incorporate into adjustParameter()
+    # !Fix me: incorporate into adjustParameter()
     def adjustMaskAlpha(self):
         keyA=self.isKeyDown.get(pygame.K_a)
         keyD=self.isKeyDown.get(pygame.K_d)
@@ -239,7 +249,7 @@ if not os.getenv("subprocess"):
                     mask[:,:,frame]+=inst
             return mask.clip(max=1)
         
-        # automatically save to `BIDS_folder/derivatives/sub-xx/ses-xx/anat/xxx_mask.nii(.gz)`
+        # automatically save to `BIDS_folder/derivatives/masks/sub-xx/ses-xx/anat/xxx_mask.nii(.gz)`
         def getPath()->Path:
             path=Path(self.path)
             name=path.name
@@ -247,7 +257,7 @@ if not os.getenv("subprocess"):
             p2=os.path.splitext(p1[0])
             path=path.with_name(p2[0]+"_mask"+p2[1]+p1[1]) # change file name, adding "_mask"
             bids_folder=path.parents[3] # BIDS_folder
-            path=bids_folder/"derivatives"/path.relative_to(bids_folder)
+            path=bids_folder/"derivatives/masks"/path.relative_to(bids_folder)
             return path
         
         mask=getMask()
