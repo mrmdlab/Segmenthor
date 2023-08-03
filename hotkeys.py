@@ -109,6 +109,9 @@ if not os.getenv("subprocess"):
                         if condition():
                             delayStart(p)
 
+            case pygame.K_j:
+                if pygame.key.get_mods() & pygame.KMOD_CTRL:
+                    self.data=self.data_backup.copy()
         self.renderSlice()
 
     def hotkeys_mouse(self, event):
@@ -163,6 +166,38 @@ if not os.getenv("subprocess"):
         print("Mouse position:", event.pos)
         print("active subprocesses: ",len(mp.active_children()))
 
+    def adjustLmt(self):
+        def adjust():
+            datamin, datamax=np.percentile(self.data_backup,[self.lmt_lower,self.lmt_upper])
+            self.data=np.clip(self.data_backup, datamin, datamax)
+            self.data=np.round((self.data - datamin) / (datamax - datamin) * 255).astype(np.uint8)
+            self.renderSlice()
+
+        keyUp=self.isKeyDown.get(pygame.K_UP)
+        keyDown=self.isKeyDown.get(pygame.K_DOWN)
+        keyLeft=self.isKeyDown.get(pygame.K_LEFT)
+        keyRight=self.isKeyDown.get(pygame.K_RIGHT)
+        unit=0.5
+        if keyUp or keyDown:
+            lmt="lmt_lower"
+        elif keyLeft or keyRight:
+            lmt="lmt_upper"
+        else:
+            return
+        now=time.time()
+        if now-self.last_change_time[lmt]>0.1:
+            self.last_change_time[lmt]=now
+            value=getattr(self,lmt)
+            if value+unit<=100 and (keyUp or keyRight):
+                setattr(self,lmt,value+unit)
+            elif value-unit>=0 and (keyDown or keyLeft):
+                setattr(self,lmt,value-unit)
+            # lower limit can't exceed upper limit
+            if self.lmt_lower+2 >= self.lmt_upper:
+                setattr(self,lmt,value)
+            adjust()
+
+# !Fix me: incorporate into adjustParameter()
     def adjustMaskAlpha(self):
         keyA=self.isKeyDown.get(pygame.K_a)
         keyD=self.isKeyDown.get(pygame.K_d)

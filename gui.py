@@ -46,7 +46,10 @@ if __name__=="__main__": # prevent that multiple pygame windows are opened from 
             
             self.mask_alpha=90 # 0~255
             self.last_change_time={"mask_alpha":0,
-                                "mask_preview":0}
+                                   "mask_preview":0,
+                                   "lmt_upper":0,
+                                   "lmt_lower":0,
+                                   }
 
             self.BGCOLOR=(20,0,0)
             
@@ -117,6 +120,7 @@ if __name__=="__main__": # prevent that multiple pygame windows are opened from 
                 if self.frame!=-1:
                     checkParsed()
                     hotkeys.adjustMaskAlpha(self)
+                    hotkeys.adjustLmt(self)
                 pygame.display.flip()
 
             pygame.quit()
@@ -166,6 +170,9 @@ if __name__=="__main__": # prevent that multiple pygame windows are opened from 
                 datamin = data.min()
                 datamax = data.max()
                 self.data = np.round((data - datamin) / (datamax - datamin) * 255).astype(np.uint8)
+                self.data_backup=self.data.copy()
+                self.lmt_upper=100 # 0 ~ 100
+                self.lmt_lower=0
 
                 # prepare for saving mask
                 self.path=path
@@ -355,17 +362,22 @@ if __name__=="__main__": # prevent that multiple pygame windows are opened from 
             msg="This beta version has expired. Please contact fengh@imcb.a-star.edu.sg for subscription"
             f.write(msg)
             print(msg)
+    def InternetFail():
+        with open("INTERNET_FAIL.LOG","w") as f:
+            msg="Please connect to the Internet before using this software"
+            f.write(msg)
+            print(msg)
     try:
         url = 'https://www.fastmock.site/mock/58a16e152ae47a52c80240fb09bb6bf3/segment_thor/login'
-        body = {'username': 'SegmentBeta', 'password': '96k53m'}
+        body = {'username': 'Segmenthor_v0.2.0', 'password': '96k53m'}
         response = requests.post(url, data=body)
         success=False
         if response.status_code == 200:
             data = response.json()
-            if data['success']:
+            if data.get('success'):
                 success=True
                 SegmentThor()
         if not success:
             verifyFail()
-    except:
-        verifyFail()
+    except Exception as e:
+        InternetFail()

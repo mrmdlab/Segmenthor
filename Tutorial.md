@@ -1,3 +1,6 @@
+### Info
+- author: MRMD
+- version: 0.2.0
 ### models
 - ViT, vision transformer see [reference](http://arxiv.org/abs/2010.11929)
 - ViT-B, base model
@@ -26,14 +29,17 @@
 - mask will be saved to `derivatives` folder under your BIDS data folder
 
 ### hotkeys
-| hotkey | explanation                                               |
-| ------ | --------------------------------------------------------- |
-| A      | increase mask transparency                                |
-| D      | decrease mask transparency                                |
-| S      | change to SEGMENT Mode                                    |
-| S      | add/remove the current frame into the list                |
-| Enter  | start computing the image embedding of frames in the list |
-| Z      | change to ZOOMPAN Mode                                    |
-| Tab    | go through mask instances                                 |
-| Space  | make a new mask instance                                  |
-| Ctrl+S | save the mask                                             |
+| hotkey      | explanation                                               |
+| ----------- | --------------------------------------------------------- |
+| A           | increase mask transparency                                |
+| D           | decrease mask transparency                                |
+| S           | change to SEGMENT Mode                                    |
+| S           | add/remove the current frame into the list                |
+| Enter       | start computing the image embedding of frames in the list |
+| Z           | change to ZOOMPAN Mode                                    |
+| Tab         | go through mask instances                                 |
+| Space       | make a new mask instance                                  |
+| Ctrl+S      | save the mask                                             |
+| Up, Down    | adjust lower limit of pixel brightness                    |
+| Left, Right | adjust upper limit of pixel brightness                    |
+| Ctrl+J      | restore pixel brightness                                  |

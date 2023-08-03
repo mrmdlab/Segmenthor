@@ -21,6 +21,7 @@ gui.py
 ## todo
 
 ### IMPORTANT
+- after adjusting brightness, Should allow user to have the option to compute again.
 - freeze the conda environment
 - Ctrl+Z, undo one control point
     - when undo the first operation, don't predict mask, becasue there're no more control points
@@ -31,9 +32,14 @@ gui.py
 - consider saving masks to `derivatives/masks` or in the same folder as the image file
 - cache image embedding in `derivatives/embedding`
 - adjust brightness
+- explore image augmentation, denoising, superresolution
+- feature: bounding box prompt
+    - rotating the box?
+- feature: brush
 - Fix bug: if multiple mask instances in one slice overlap, the volume displayed may be wrong.
 
 ### OTHERS
+- correct orientation, label left, right, etc
 - render mask, control points on `self.surf_slc` instead of on `self.screen`
 - Fix bug: when cursor is outside the slice, disable previewMask()
 - Add munual fine editing of masks
@@ -42,8 +48,6 @@ gui.py
 - MIP rendering, maximum intensity projection，MIP
 - deal with anisotropic pixels
 - iterative predication?
-- why the "computing image embedding" message disappears when I click or change to other slice?
-- correct orientation, label left, right, etc
 - cross hair
 - fix bug: if drag two files?
 - rotation of boundary box? Is it supported by SAM?
@@ -54,6 +58,7 @@ gui.py
 - to compute the image embedding takes a long time, but to predict is very fast. Maybe GPU is necessary
 
 ## changelog
+- control brightness using up, down, left, right. Remember to deal with exceptions
 - fix bug: need to check whether an image has been loaded before doing `checkParsed()` and `hotkeys.adjustMaskAlpha()` 
 - in `first_launch.cmd` download the model checkpoint
 - move `self.mask_instance` to `self.loadImage()`
