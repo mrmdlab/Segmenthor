@@ -3,13 +3,17 @@
 - version: 0.2.0
 ### models
 - ViT, vision transformer see [reference](http://arxiv.org/abs/2010.11929)
-- ViT-B, base model
-- ViT-L, large model
-- ViT-H, huge model
+    - ViT-B, base model
+    - ViT-L, large model
+    - ViT-H, huge model
+- edit `config.json` to change model. Valid values for `model` entry are
+    - "vit_b"
+    - "vit_l"
+    - "vit_h"
 
 ### reminder
-- This beta version will expire soon. Please contact fengh@imcb.a-star.edu.sg for subscription.
-- For this beta version, it requires internet connection for verification purpose.
+- This trial version will expire soon. Please contact fengh@imcb.a-star.edu.sg for subscription.
+- Make sure you have good internet connection. if you still get Internet Fail error, wait for 10 seconds and try again.
 - Disable Chinese input method, if any, before using this software
 - Don't press Enter too often in order to avoid potential bugs
 

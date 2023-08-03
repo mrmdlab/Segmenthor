@@ -5,6 +5,7 @@ nuitka --standalone ^
 --include-data-files=checkpoints/sam_vit_b.pth=checkpoints/sam_vit_b.pth ^
 --include-data-files=Tutorial.md=Tutorial.md ^
 --include-data-files=icon.jpg=icon.jpg ^
+--include-data-files=config.json=config.json ^
 --windows-icon-from-ico=icon.ico ^
 --include-package-data=pygame ^
 gui.py

@@ -5,6 +5,7 @@ if __name__=="__main__": # prevent that multiple pygame windows are opened from 
     import os
     import time
     import multiprocessing as mp
+    import json
 
     from segment_anything import sam_model_registry
     import enums
@@ -13,7 +14,7 @@ if __name__=="__main__": # prevent that multiple pygame windows are opened from 
 
 
     class SegmentThor:
-        def __init__(self,model="vit_b"):
+        def __init__(self,model):
             pygame.init()
 
             self.sam = sam_model_registry[model](checkpoint=f"checkpoints/sam_{model}.pth")
@@ -367,6 +368,30 @@ if __name__=="__main__": # prevent that multiple pygame windows are opened from 
             msg="Please connect to the Internet before using this software"
             f.write(msg)
             print(msg)
+
+    def downloadModel(model):
+        model_pth=f"checkpoints/sam_{model}.pth"
+        if not os.path.isfile(model_pth):
+            model_url={
+                "vit_b":"https://dl.fbaipublicfiles.com/segment_anything/sam_vit_b_01ec64.pth",
+                "vit_l":"https://dl.fbaipublicfiles.com/segment_anything/sam_vit_l_0b3195.pth",
+                "vit_h":"https://dl.fbaipublicfiles.com/segment_anything/sam_vit_h_4b8939.pth"
+            }
+            file=requests.get(model_url)
+            with open(model_pth,"wb") as f:
+                print(f"Downloading the model {model}")
+                f.write(file.content)
+    
+    try:
+        with open("config.json") as f:
+            config=f.read()
+            config=json.loads(config)
+            model=config["model"]
+    except:
+        # in case the config file doesn't exist
+        model="vit_b"
+    downloadModel(model)
+
     try:
         url = 'https://www.fastmock.site/mock/58a16e152ae47a52c80240fb09bb6bf3/segment_thor/login'
         body = {'username': 'Segmenthor_v0.2.0', 'password': '96k53m'}
@@ -376,7 +401,7 @@ if __name__=="__main__": # prevent that multiple pygame windows are opened from 
             data = response.json()
             if data.get('success'):
                 success=True
-                SegmentThor()
+                SegmentThor(model)
         if not success:
             verifyFail()
     except Exception as e:

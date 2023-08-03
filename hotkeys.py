@@ -112,6 +112,8 @@ if not os.getenv("subprocess"):
             case pygame.K_j:
                 if pygame.key.get_mods() & pygame.KMOD_CTRL:
                     self.data=self.data_backup.copy()
+                    self.lmt_upper=100
+                    self.lmt_lower=0
         self.renderSlice()
 
     def hotkeys_mouse(self, event):
