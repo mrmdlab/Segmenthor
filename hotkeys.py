@@ -59,13 +59,22 @@ if not os.getenv("subprocess"):
                 if pygame.key.get_mods() & pygame.KMOD_CTRL:
                     inst=self.ctrlpnts[self.frame][self.mask_instance]
                     order=inst["order"]
+
+                    # do nothing if there's no control points for the current mask instance
                     if len(order)>0:
                         pn=order.pop() # positive or negative
                         inst[pn].pop()
+                        
+                        # update the mask after removing one control point
                         if len(order)>0:
                             predictMask(self)
-                        else: # remove the last control point in the current mask instance
+                        else:
                             self.masks[self.frame].pop(self.mask_instance)
+
+                            # if the mask isn't the last mask instance
+                            # remove it from `self.ctrlpnts` too
+                            if self.mask_instance!=len(self.ctrlpnts[self.frame])-1:
+                                self.ctrlpnts[self.frame].pop(self.mask_instance)
                 else:
                     self.mode = enums.ZOOMPAN
 

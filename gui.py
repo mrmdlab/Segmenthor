@@ -15,6 +15,7 @@ if __name__=="__main__": # prevent that multiple pygame windows are opened from 
 
     class SegmentThor:
         def __init__(self,model):
+            version="v0.3.0"
             pygame.init()
 
             self.sam = sam_model_registry[model](checkpoint=f"checkpoints/sam_{model}.pth")
@@ -58,7 +59,7 @@ if __name__=="__main__": # prevent that multiple pygame windows are opened from 
             self.isKeyDown={} # eg. enums.LMB->True, pygame.K_s->False
 
             self.screen = pygame.display.set_mode(self.window_size)
-            pygame.display.set_caption("Segment Thor beta")
+            pygame.display.set_caption(f"Segmenthor {version}")
             icon = pygame.image.load("icon.jpg")
             pygame.display.set_icon(icon)
 

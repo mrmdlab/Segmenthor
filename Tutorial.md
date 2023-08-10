@@ -49,3 +49,4 @@
 | Up, Down    | adjust lower limit of pixel brightness                    |
 | Left, Right | adjust upper limit of pixel brightness                    |
 | Ctrl+J      | restore pixel brightness                                  |
+| Ctrl+Z      | undo one control point of the current mask instance       |

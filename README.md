@@ -22,8 +22,6 @@ gui.py
 ## todo
 
 ### IMPORTANT
-- Fix bug: undo must not keep more than one empty mask instance.
-- Fix bug: after `pop()` of `self.masks`, `self.ctrlpnts` may not be consitent with `self.masks`
 - abandon standalone build
 - after adjusting brightness, Should allow user to have the option to compute again.
 - freeze the conda environment
@@ -43,10 +41,10 @@ gui.py
 - Add munual fine editing of masks
 - support multiple labels. eg. segment liver and lung with different labels
 - MPR rendering, multi-planar reformation
+    - cross hair
 - MIP rendering, maximum intensity projection，MIP
 - deal with anisotropic pixels
 - iterative predication?
-- cross hair
 - fix bug: if drag two files?
 - rotation of boundary box? Is it supported by SAM?
 - if computing image embedding takes too long, we can compute it in advance. ie. let it run overnight
@@ -56,6 +54,8 @@ gui.py
 - to compute the image embedding takes a long time, but to predict is very fast. Maybe GPU is necessary
 
 ## changelog
+- Fix bug: undo must not keep more than one empty mask instance.
+- Fix bug: after `pop()` of `self.masks`, `self.ctrlpnts` may not be consitent with `self.masks`
 - Ctrl+Z, undo one control point
     - when undo the first operation, don't predict mask, becasue there're no more control points
 - Fix bug: `InternetFail()`
