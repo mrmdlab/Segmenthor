@@ -1,17 +1,24 @@
-### Info
+## Info
 - author: MRMD
 - version: 0.3.0
-    - the previous release was trash
+    - note: the previous releases were trash
 - what's new
     - undo
     - user can specify `mask_path` in `config.json`
 - what to expect for the next version
-    - powered by the latest deep learning model, quality of MRI images acquired with fewer averages can be greatly improved, and hence acquisition time can be reduced.
+    - powered by the state-of-the-art deep learning model, quality of MRI images acquired with fewer averages can be greatly improved, and hence acquisition time can be reduced
 
+## Get Started
+1. make sure your computer is connected to the Internet
+2. decompress `runtime.zip` and `segmenthor_v0.3.0.zip` to the same folder, so that `runtime` folder and `segmenthor.cmd` are at the same level
+3. double click `segmenthor.cmd` to start
+4. For the first time, a model file (357MB) will be downloaded
+5. If the software fails to start, wait 10 seconds and try again
+
+## Manual
 ### reminder
 - **Disable Chinese input method, if any, before using this software**
 - This trial version will expire soon. Please contact fengh@imcb.a-star.edu.sg for subscription.
-- Make sure your computer is connected to the Internet. If you still get an Internet Fail error, wait 10 seconds and try again.
 - it's normal to get unresponding for a few seconds after pressing `Enter` because computing the image embedding takes up a lot of CPU resource. It's more likely to get unresponding if you are using `vit_l` or `vit_h`
 
 ### ZOOMPAN

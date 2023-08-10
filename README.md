@@ -1,34 +1,14 @@
-## build
-### complete build
-```cmd
-nuitka --standalone ^
---include-data-files=checkpoints/sam_vit_b.pth=checkpoints/sam_vit_b.pth ^
---include-data-files=Tutorial.md=Tutorial.md ^
---include-data-files=icon.jpg=icon.jpg ^
---include-data-files=config.json=config.json ^
---windows-icon-from-ico=icon.ico ^
---include-package-data=pygame ^
-gui.py
-```
-### incremental build (?)
-if no new packages are introduced in the change to the code.
-```cmd
-nuitka --standalone ^
---output-dir=nuitka_trial ^
---nofollow-imports ^
-gui.py
-```
-
 ## todo
 
 ### IMPORTANT
-- explore image augmentation, denoising, superresolution
+- explore image enhancement, denoising, superresolution
     - Gaussian filtering (2D, 3D)
     - non local means (trash)
     - deep learning, has yet to find a good model
         - swin-transformer, GAN, transformer, Vision transformer, CNN, ...
-- abandon standalone build
 - after adjusting brightness, Should allow user to have the option to compute again.
+- allow adjust brightness for only one slice
+- display file name
 - hotkey for reloading config
 - new mode: ADJUST
 - freeze the conda environment
@@ -59,6 +39,7 @@ gui.py
 - to compute the image embedding takes a long time, but to predict is very fast. Maybe GPU is necessary
 
 ## changelog
+- abandon standalone build
 - default value of `self.lmt_upper` is 99.5 instead of 100
 - consider saving masks to `derivatives/masks` or in the same folder as the image file
 - Fix bug: undo must not keep more than one empty mask instance.

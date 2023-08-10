@@ -382,7 +382,8 @@ if __name__=="__main__": # prevent that multiple pygame windows are opened from 
                 "vit_l":"https://dl.fbaipublicfiles.com/segment_anything/sam_vit_l_0b3195.pth",
                 "vit_h":"https://dl.fbaipublicfiles.com/segment_anything/sam_vit_h_4b8939.pth"
             }
-            file=requests.get(model_url)
+            file=requests.get(model_url[model])
+            os.makedirs("checkpoints",exist_ok=True)
             with open(model_pth,"wb") as f:
                 print(f"Downloading the model {model}")
                 f.write(file.content)
