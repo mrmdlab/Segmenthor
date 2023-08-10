@@ -2,6 +2,11 @@
 - author: MRMD
 - version: 0.3.0
     - the previous release was trash
+- what's new
+    - undo
+    - user can specify `mask_path` in `config.json`
+- what to expect for the next version
+    - powered by the latest deep learning model, quality of MRI images acquired with fewer averages can be greatly improved, and hence acquisition time can be reduced.
 
 ### reminder
 - **Disable Chinese input method, if any, before using this software**
@@ -34,7 +39,7 @@
 | Ctrl+S      | save the mask                                             |
 | Up, Down    | adjust lower limit of pixel brightness                    |
 | Left, Right | adjust upper limit of pixel brightness                    |
-| Ctrl+J      | restore pixel brightness                                  |
+| Ctrl+J      | reset image brightness                                    |
 | Ctrl+Z      | undo one control point of the current mask instance       |
 
 ## config

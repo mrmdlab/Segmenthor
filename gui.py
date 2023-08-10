@@ -175,7 +175,7 @@ if __name__=="__main__": # prevent that multiple pygame windows are opened from 
                 datamax = data.max()
                 self.data = np.round((data - datamin) / (datamax - datamin) * 255).astype(np.uint8)
                 self.data_backup=self.data.copy()
-                self.lmt_upper=100 # 0 ~ 100
+                self.lmt_upper=99.5 # 0 ~ 100
                 self.lmt_lower=0
 
                 # prepare for saving mask

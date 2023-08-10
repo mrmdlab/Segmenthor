@@ -22,12 +22,18 @@ gui.py
 ## todo
 
 ### IMPORTANT
+- explore image augmentation, denoising, superresolution
+    - Gaussian filtering (2D, 3D)
+    - non local means (trash)
+    - deep learning, has yet to find a good model
+        - swin-transformer, GAN, transformer, Vision transformer, CNN, ...
 - abandon standalone build
 - after adjusting brightness, Should allow user to have the option to compute again.
+- hotkey for reloading config
+- new mode: ADJUST
 - freeze the conda environment
 - Ctrl+Y, redo (undo the previous "undo")
 - cache image embedding in `derivatives/embedding`
-- explore image augmentation, denoising, superresolution
 - feature: bounding box prompt
     - rotating the box?
 - Fix bug: if multiple mask instances in one slice overlap, the volume displayed may be wrong.
@@ -53,6 +59,7 @@ gui.py
 - to compute the image embedding takes a long time, but to predict is very fast. Maybe GPU is necessary
 
 ## changelog
+- default value of `self.lmt_upper` is 99.5 instead of 100
 - consider saving masks to `derivatives/masks` or in the same folder as the image file
 - Fix bug: undo must not keep more than one empty mask instance.
 - Fix bug: after `pop()` of `self.masks`, `self.ctrlpnts` may not be consitent with `self.masks`
