@@ -193,9 +193,10 @@ if __name__=="__main__": # prevent that multiple pygame windows are opened from 
                 '''
                 control points: dict = {frame : instances}
                 instances: list = [inst1, inst2, ...] 
-                inst1: dict = {"neg": pnts, "pos":pnts}
+                inst1: dict = {"neg": pnts, "pos":pnts,"order":[1,0,0,1,...]}
                 pnts: list = [pnt1, pnt2, ...]
                 pnt1: np.ndarray = (x1 ,y1)
+                "order": to enable undo, record the order of control points. 1 for positive, 0 for negative
                 
                 self.ctrlpnts[self.frame][self.mask_instance]["pos"][4]
                     -> in the current frame, coordinates of the 5th positive control point:
@@ -216,7 +217,8 @@ if __name__=="__main__": # prevent that multiple pygame windows are opened from 
                 for i in range(self.nframes):
                     self.ctrlpnts[i]=[{
                         "pos":[],
-                        "neg":[]
+                        "neg":[],
+                        "order":[]
                     }]
                     
                     self.masks[i]=[]
@@ -352,7 +354,7 @@ if __name__=="__main__": # prevent that multiple pygame windows are opened from 
         # I'm surprised that python supports variable as default parameter for function
         def get_nctrlpnts(self, inst):
             instance=self.ctrlpnts[self.frame][inst]
-            return len(instance["pos"])+len(instance["neg"])
+            return len(instance["order"])
 
 
         def test(self):
@@ -404,5 +406,5 @@ if __name__=="__main__": # prevent that multiple pygame windows are opened from 
                 SegmentThor(model)
         if not success:
             verifyFail()
-    except Exception as e:
+    except requests.exceptions.ConnectionError as e:
         InternetFail()

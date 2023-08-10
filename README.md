@@ -22,14 +22,14 @@ gui.py
 ## todo
 
 ### IMPORTANT
+- Fix bug: undo must not keep more than one empty mask instance.
+- Fix bug: after `pop()` of `self.masks`, `self.ctrlpnts` may not be consitent with `self.masks`
+- abandon standalone build
 - after adjusting brightness, Should allow user to have the option to compute again.
 - freeze the conda environment
-- Ctrl+Z, undo one control point
-    - when undo the first operation, don't predict mask, becasue there're no more control points
 - Ctrl+Y, redo (undo the previous "undo")
 - consider saving masks to `derivatives/masks` or in the same folder as the image file
 - cache image embedding in `derivatives/embedding`
-- adjust brightness
 - explore image augmentation, denoising, superresolution
 - feature: bounding box prompt
     - rotating the box?
@@ -56,6 +56,11 @@ gui.py
 - to compute the image embedding takes a long time, but to predict is very fast. Maybe GPU is necessary
 
 ## changelog
+- Ctrl+Z, undo one control point
+    - when undo the first operation, don't predict mask, becasue there're no more control points
+- Fix bug: `InternetFail()`
+- allow user to choose which model to use in `config.json`
+- adjust brightness
 - encrypt software
     - fast mock account verification. done
     - Nuitka compilation
