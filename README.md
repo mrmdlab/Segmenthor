@@ -26,12 +26,10 @@ gui.py
 - after adjusting brightness, Should allow user to have the option to compute again.
 - freeze the conda environment
 - Ctrl+Y, redo (undo the previous "undo")
-- consider saving masks to `derivatives/masks` or in the same folder as the image file
 - cache image embedding in `derivatives/embedding`
 - explore image augmentation, denoising, superresolution
 - feature: bounding box prompt
     - rotating the box?
-- feature: brush
 - Fix bug: if multiple mask instances in one slice overlap, the volume displayed may be wrong.
 
 ### OTHERS
@@ -46,6 +44,7 @@ gui.py
 - deal with anisotropic pixels
 - iterative predication?
 - fix bug: if drag two files?
+- feature: brush
 - rotation of boundary box? Is it supported by SAM?
 - if computing image embedding takes too long, we can compute it in advance. ie. let it run overnight
     - is it possible to save image embedding? How long does it take to load?
@@ -54,6 +53,7 @@ gui.py
 - to compute the image embedding takes a long time, but to predict is very fast. Maybe GPU is necessary
 
 ## changelog
+- consider saving masks to `derivatives/masks` or in the same folder as the image file
 - Fix bug: undo must not keep more than one empty mask instance.
 - Fix bug: after `pop()` of `self.masks`, `self.ctrlpnts` may not be consitent with `self.masks`
 - Ctrl+Z, undo one control point

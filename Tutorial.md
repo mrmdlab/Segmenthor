@@ -1,23 +1,13 @@
 ### Info
 - author: MRMD
-- version: 0.2.0
+- version: 0.3.0
     - the previous release was trash
-### models
-- ViT, vision transformer see [reference](http://arxiv.org/abs/2010.11929)
-    - ViT-B, base model
-    - ViT-L, large model
-    - ViT-H, huge model
-- edit `config.json` to change model. Valid values for `model` entry are
-    - "vit_b"
-    - "vit_l"
-    - "vit_h"
 
 ### reminder
+- **Disable Chinese input method, if any, before using this software**
 - This trial version will expire soon. Please contact fengh@imcb.a-star.edu.sg for subscription.
-- Make sure you have good internet connection. if you still get Internet Fail error, wait for 10 seconds and try again.
-- Disable Chinese input method, if any, before using this software
-- Don't press Enter too often in order to avoid potential bugs
-- it's normal to get unresponding for a few seconds because computing the image embedding takes up a lot of CPU resource. It's more likely to get unresponding if you are running Large model or Huge model
+- Make sure your computer is connected to the Internet. If you still get an Internet Fail error, wait 10 seconds and try again.
+- it's normal to get unresponding for a few seconds after pressing `Enter` because computing the image embedding takes up a lot of CPU resource. It's more likely to get unresponding if you are using `vit_l` or `vit_h`
 
 ### ZOOMPAN
 - left mouse button to pan
@@ -29,10 +19,6 @@
 - Ctrl+Z to undo one control point
 - S to add the current slice to the list for image embedding computation
 - Enter to start computing image embedding of slices in the list
-
-### save mask
-- Data must follow BIDS specification, must include `session` folder. If the NIfTI file you drag and open isn't from a BIDS data folder, you won't be able to save the mask correctly.
-- mask will be saved to `derivatives/masks` folder under your BIDS data folder
 
 ### hotkeys
 | hotkey      | explanation                                               |
@@ -50,3 +36,26 @@
 | Left, Right | adjust upper limit of pixel brightness                    |
 | Ctrl+J      | restore pixel brightness                                  |
 | Ctrl+Z      | undo one control point of the current mask instance       |
+
+## config
+### specification
+- model
+    - vit_b
+    - vit_l
+    - vit_h
+- mask_path
+    - derivatives
+    - same
+
+### models
+- ViT, vision transformer see [reference](http://arxiv.org/abs/2010.11929)
+    - ViT-B, base model (default, as it's the fastest)
+    - ViT-L, large model
+    - ViT-H, huge model
+
+### mask path
+- derivatives
+    - masks will be saved as per BIDS specification to `derivatives/masks` under your BIDS data folder
+    - In order for this to work properly, your data must follow BIDS specification and must include `session` folder
+- same (default)
+    - masks will be saved to the same folder as the original image file. **It overwrites the old file**

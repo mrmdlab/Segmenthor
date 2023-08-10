@@ -1,3 +1,4 @@
 {
-    "model":"vit_b"
+    "model":"vit_b",
+    "mask_path":"same"
 }

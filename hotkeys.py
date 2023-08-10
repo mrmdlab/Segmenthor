@@ -64,7 +64,7 @@ if not os.getenv("subprocess"):
                     if len(order)>0:
                         pn=order.pop() # positive or negative
                         inst[pn].pop()
-                        
+
                         # update the mask after removing one control point
                         if len(order)>0:
                             predictMask(self)
@@ -278,8 +278,9 @@ if not os.getenv("subprocess"):
             p1=os.path.splitext(name)
             p2=os.path.splitext(p1[0])
             path=path.with_name(p2[0]+"_mask"+p2[1]+p1[1]) # change file name, adding "_mask"
-            bids_folder=path.parents[3] # BIDS_folder
-            path=bids_folder/"derivatives/masks"/path.relative_to(bids_folder)
+            if self.config["mask_path"] == "derivatives":
+                bids_folder=path.parents[3] # BIDS_folder
+                path=bids_folder/"derivatives/masks"/path.relative_to(bids_folder)
             return path
         
         mask=getMask()

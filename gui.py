@@ -14,10 +14,12 @@ if __name__=="__main__": # prevent that multiple pygame windows are opened from 
 
 
     class SegmentThor:
-        def __init__(self,model):
-            version="v0.3.0"
+        def __init__(self,config):
             pygame.init()
 
+            self.config=config
+
+            model=config['model']
             self.sam = sam_model_registry[model](checkpoint=f"checkpoints/sam_{model}.pth")
             self.ncpu=mp.cpu_count()
             self.frame=-1 # used to check whether an image has been loaded
@@ -59,7 +61,7 @@ if __name__=="__main__": # prevent that multiple pygame windows are opened from 
             self.isKeyDown={} # eg. enums.LMB->True, pygame.K_s->False
 
             self.screen = pygame.display.set_mode(self.window_size)
-            pygame.display.set_caption(f"Segmenthor {version}")
+            pygame.display.set_caption(f"Segmenthor {enums.VERSION}")
             icon = pygame.image.load("icon.jpg")
             pygame.display.set_icon(icon)
 
@@ -384,27 +386,31 @@ if __name__=="__main__": # prevent that multiple pygame windows are opened from 
             with open(model_pth,"wb") as f:
                 print(f"Downloading the model {model}")
                 f.write(file.content)
-    
+
+    config={
+        "model":"vit_b",
+        "mask_path":"same"
+    }
     try:
         with open("config.json") as f:
-            config=f.read()
-            config=json.loads(config)
-            model=config["model"]
+            cfg=f.read()
+            cfg=json.loads(cfg)
+            config.update(cfg)
+    # in case the config file doesn't exist
     except:
-        # in case the config file doesn't exist
-        model="vit_b"
-    downloadModel(model)
+        pass
+    downloadModel(config["model"])
 
     try:
         url = 'https://www.fastmock.site/mock/58a16e152ae47a52c80240fb09bb6bf3/segment_thor/login'
-        body = {'username': 'Segmenthor_v0.2.0', 'password': '96k53m'}
+        body = {'username': f'Segmenthor_{enums.VERSION}', 'password': '96k53m'}
         response = requests.post(url, data=body)
         success=False
         if response.status_code == 200:
             data = response.json()
             if data.get('success'):
                 success=True
-                SegmentThor(model)
+                SegmentThor(config)
         if not success:
             verifyFail()
     except requests.exceptions.ConnectionError as e:
