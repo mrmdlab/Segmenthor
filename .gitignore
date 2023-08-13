@@ -4,4 +4,4 @@ checkpoints/*
 dist
 __pycache__
 test.ipynb
-nuitka_help.txt
+nuitka_help.log

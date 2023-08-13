@@ -2,16 +2,16 @@
 set output=dist
 mkdir %output%
 
-nuitka --main=gui.py ^
---include-module=enums ^
---include-module=hotkeys ^
---windows-icon-from-ico=icon.ico ^
---output-dir=%output% ^
---output-filename=%output%\segmenthor
-
+nuitka --module --main=segmenthor.py --output-dir=%output%
+nuitka --module --main=enums.py --output-dir=%output%
+nuitka --module --main=gui.py --output-dir=%output%
+nuitka --module --main=hotkeys.py --output-dir=%output%
+del %output%\*.pyi
 
 copy /Y icon.jpg %output%\icon.jpg
 copy /Y config.json %output%\config.json
 copy /Y Tutorial.md %output%\Tutorial.md
-del %output%\gui.cmd
-copy /Y segmenthor.cmd %output%\segmenthor.cmd
+copy /Y start.cmd %output%\start.cmd
+
+cd %output%
+7z a segmenthor_v0.3.0.zip *.pyd *.cmd *.md *.json *.jpg

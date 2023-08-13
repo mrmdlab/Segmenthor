@@ -55,7 +55,7 @@ if not os.getenv("subprocess"):
                         self.mask_instance=len(self.ctrlpnts[self.frame])-1
 
             case pygame.K_z:
-                 # Ctrl+Z, undo one control point
+                    # Ctrl+Z, undo one control point
                 if pygame.key.get_mods() & pygame.KMOD_CTRL:
                     inst=self.ctrlpnts[self.frame][self.mask_instance]
                     order=inst["order"]
@@ -142,7 +142,6 @@ if not os.getenv("subprocess"):
                     self.lmt_lower=0
                     
         self.renderSlice()
-
 
     def predictMask(self):
         # TODO: support more prompts, eg. bounding box 

@@ -1,6 +1,8 @@
 ## todo
 
 ### IMPORTANT
+- makefile for incremental compilation
+- Fix bug: if multiple mask instances in one slice overlap, the volume displayed may be wrong.
 - explore image enhancement, denoising, superresolution
     - Gaussian filtering (2D, 3D)
     - non local means (trash)
@@ -16,7 +18,6 @@
 - cache image embedding in `derivatives/embedding`
 - feature: bounding box prompt
     - rotating the box?
-- Fix bug: if multiple mask instances in one slice overlap, the volume displayed may be wrong.
 
 ### OTHERS
 - correct orientation, label left, right, etc
@@ -39,7 +40,7 @@
 - to compute the image embedding takes a long time, but to predict is very fast. Maybe GPU is necessary
 
 ## changelog
-- abandon standalone build
+- turn to pyd instead of standalone build
 - default value of `self.lmt_upper` is 99.5 instead of 100
 - consider saving masks to `derivatives/masks` or in the same folder as the image file
 - Fix bug: undo must not keep more than one empty mask instance.
