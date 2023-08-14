@@ -40,6 +40,9 @@
 - to compute the image embedding takes a long time, but to predict is very fast. Maybe GPU is necessary
 
 ## changelog
+- Fix bug: Ctrl+J should reset `self.lmt_upper` as 99.5 instead of 100
+- better encryption
+- display file name
 - turn to pyd instead of standalone build
 - default value of `self.lmt_upper` is 99.5 instead of 100
 - consider saving masks to `derivatives/masks` or in the same folder as the image file

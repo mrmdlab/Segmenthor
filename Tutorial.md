@@ -1,17 +1,18 @@
 ## Info
 - author: MRMD
-- version: 0.3.0
+- version: 0.3.1
     - note: the previous releases were trash
 - what's new
     - undo
     - user can specify `mask_path` in `config.json`
+    - file name is displayed
 - what to expect for the next version
     - powered by the state-of-the-art deep learning model, quality of MRI images acquired with fewer averages can be greatly improved, and hence acquisition time can be reduced
 
 ## Get Started
 1. make sure your computer is connected to the Internet
-2. decompress `runtime.zip` and `segmenthor_v0.3.0.zip` to the same folder, so that `runtime` folder and `start.cmd` are at the same level. Inside `runtime` folder, there should be many `dll` files instead of another folder named `runtime`
-3. double click `segmenthor.cmd` to start
+2. decompress `runtime.zip` and `segmenthor_{version}.zip` to the same folder, so that `runtime` folder and `start.cmd` are at the same level. Inside `runtime` folder, there should be many `dll` files instead of another folder named `runtime`
+3. double click `start.cmd` to start
 4. For the first time, a model file (357MB) will be downloaded
 5. If the software fails to start, wait 10 seconds and try again
 
