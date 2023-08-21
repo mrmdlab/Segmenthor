@@ -157,6 +157,7 @@ if not os.getenv("subprocess"):
         # TODO: maybe try iterative prediction?
         predicted_masks, scores, _ = self.predictors[self.frame].predict(point_coords,
                                                                         point_labels)
+        #! Fix me: hotkey C -> cycle through all predicted masks
         predicted_mask=predicted_masks[scores.argmax()].astype(np.uint8)
         print("mask quality: ",scores.max())
 
@@ -258,13 +259,6 @@ if not os.getenv("subprocess"):
                 self.renderSlice()
 
     def saveMask(self):
-        def getMask():
-            mask=np.zeros_like(self.data)
-            for frame in self.masks:
-                for inst in self.masks[frame]:
-                    mask[:,:,frame]+=inst
-            return mask.clip(max=1)
-        
         # automatically save to `BIDS_folder/derivatives/masks/sub-xx/ses-xx/anat/xxx_mask.nii(.gz)`
         def getPath()->Path:
             path=Path(self.path)
@@ -277,7 +271,7 @@ if not os.getenv("subprocess"):
                 path=bids_folder/"derivatives/masks"/path.relative_to(bids_folder)
             return path
         
-        mask=getMask()
+        mask=self.getMask()
         path=getPath()
         mask=nib.Nifti1Image(mask,self.mask_affine,self.mask_header)
         # TODO: user may want to save individual masks for every tumor

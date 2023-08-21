@@ -12,7 +12,6 @@
 - feature: bounding box prompt
     - rotating the box?
 - feature: text prompt
-- Fix bug: if multiple mask instances in one slice overlap, the volume displayed may be wrong.
 - explore image enhancement, denoising, superresolution
     - Gaussian filtering (2D, 3D)
     - non local means (trash)
@@ -44,6 +43,8 @@
 - to compute the image embedding takes a long time, but to predict is very fast. Maybe GPU is necessary
 
 ## changelog
+- Fix bug: swap axes back to the original before saving mask
+- Fix bug: if multiple mask instances in one slice overlap, the volume displayed may be wrong.
 - Fix bug: should adjust brightness immediately after loading the image
 - Fix bug: display 3D images
 - Fix bug: print "Downloading" message before it begins to download

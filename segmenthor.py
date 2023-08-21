@@ -177,8 +177,8 @@ if not os.getenv("subprocess"): # prevent multiple pygame windows from popping u
                 data = np.round((data - datamin) / (datamax - datamin) * 255).astype(np.uint8)
                 
                 pixdim=img.header.get("pixdim")
-                axis=np.argmax(pixdim[1:4])
-                self.data=data.swapaxes(axis,2)
+                self.axis=np.argmax(pixdim[1:4])
+                self.data=data.swapaxes(self.axis,2)
                 self.data_backup=self.data.copy()
                 self.lmt_upper=99.5 # 0 ~ 100
                 self.lmt_lower=0.5
@@ -209,7 +209,7 @@ if not os.getenv("subprocess"): # prevent multiple pygame windows from popping u
                     -> in the current frame, coordinates of the 5th positive control point:
                 one instance represents one tumor, in case there are multiple tumors in one frame
 
-                maks:dict= {frame:instances}
+                masks:dict= {frame:instances}
                 instances:list=[inst1, inst2, ...]
                 inst1:np.ndarray, ndim=2, dtype=uint8, element value = 1 or 0
                 
@@ -317,10 +317,8 @@ if not os.getenv("subprocess"): # prevent multiple pygame windows from popping u
                 match panel:
                     case "volume":
                         surf=self.surf_volume
-                        num=0
-                        for masks_of_frame in self.masks.values():
-                            for mask in masks_of_frame:
-                                num+=mask.sum()
+                        mask=self.getMask()
+                        num=mask.sum()
                         self.volume=self.voxel_size*num
                         text=f"Volume: {self.volume:.2f} mm3"
                     case "mode":
@@ -337,7 +335,7 @@ if not os.getenv("subprocess"): # prevent multiple pygame windows from popping u
                 for i,t in enumerate(text.splitlines()):
                     t = self.panel_font.render(t, True, self.panel_color)
                     surf.blit(t,(0,i*height)) # display text on the panel. compatible for multiple lines
-                    self.screen.blit(surf,self.panel_dests[panel]) # draw the panel on the screen
+                self.screen.blit(surf,self.panel_dests[panel]) # draw the panel on the screen
             
             def render():
                 # ensure it's gray scale
@@ -364,6 +362,13 @@ if not os.getenv("subprocess"): # prevent multiple pygame windows from popping u
             renderPanel("volume")
             renderPanel("copyright")
             renderPanel("msg")
+
+        def getMask(self):
+            mask=np.zeros_like(self.data)
+            for frame in self.masks:
+                for inst in self.masks[frame]:
+                    mask[:,:,frame]+=inst
+            return mask.clip(max=1).swapaxes(self.axis,2)
 
         # I'm surprised that python supports variable as default parameter for function
         def get_nctrlpnts(self, inst):
