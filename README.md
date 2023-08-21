@@ -1,7 +1,17 @@
 ## todo
 
 ### IMPORTANT
+- Use not only the mask of the highest score, may be hotkey C to cycle through possible masks
+- optimize multiprocess, maybe try Coroutine or thread
+- cache image embedding in `derivatives/embedding`
 - makefile for incremental compilation
+- correct orientation, label left, right, etc
+    - Fix bug: anisotropic resolution
+    - MPR rendering, multi-planar reformation
+        - cross hair
+- feature: bounding box prompt
+    - rotating the box?
+- feature: text prompt
 - Fix bug: if multiple mask instances in one slice overlap, the volume displayed may be wrong.
 - explore image enhancement, denoising, superresolution
     - Gaussian filtering (2D, 3D)
@@ -15,18 +25,12 @@
 - new mode: ADJUST
 - freeze the conda environment
 - Ctrl+Y, redo (undo the previous "undo")
-- cache image embedding in `derivatives/embedding`
-- feature: bounding box prompt
-    - rotating the box?
 
 ### OTHERS
-- correct orientation, label left, right, etc
 - render mask, control points on `self.surf_slc` instead of on `self.screen`
 - Fix bug: when cursor is outside the slice, disable previewMask()
 - Add munual fine editing of masks
 - support multiple labels. eg. segment liver and lung with different labels
-- MPR rendering, multi-planar reformation
-    - cross hair
 - MIP rendering, maximum intensity projection，MIP
 - deal with anisotropic pixels
 - iterative predication?
@@ -40,6 +44,9 @@
 - to compute the image embedding takes a long time, but to predict is very fast. Maybe GPU is necessary
 
 ## changelog
+- Fix bug: should adjust brightness immediately after loading the image
+- Fix bug: display 3D images
+- Fix bug: print "Downloading" message before it begins to download
 - Fix bug: Ctrl+J should reset `self.lmt_upper` as 99.5 instead of 100
 - better encryption
 - display file name

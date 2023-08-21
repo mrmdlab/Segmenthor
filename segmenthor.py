@@ -73,9 +73,6 @@ if not os.getenv("subprocess"): # prevent multiple pygame windows from popping u
             self.main()
 
         def main(self):
-            #! to remove
-            # self.test()
-
             def checkParsed():
                 q:mp.Queue=self.queues.get(self.frame,False)
                 if q and q.full(): # when q == False, it skips the check of q.full()
@@ -177,10 +174,14 @@ if not os.getenv("subprocess"): # prevent multiple pygame windows from popping u
                 data = img.get_fdata()
                 datamin = data.min()
                 datamax = data.max()
-                self.data = np.round((data - datamin) / (datamax - datamin) * 255).astype(np.uint8)
+                data = np.round((data - datamin) / (datamax - datamin) * 255).astype(np.uint8)
+                
+                pixdim=img.header.get("pixdim")
+                axis=np.argmax(pixdim[1:4])
+                self.data=data.swapaxes(axis,2)
                 self.data_backup=self.data.copy()
                 self.lmt_upper=99.5 # 0 ~ 100
-                self.lmt_lower=0
+                self.lmt_lower=0.5
 
                 # prepare for saving mask
                 self.path=path
@@ -189,7 +190,6 @@ if not os.getenv("subprocess"): # prevent multiple pygame windows from popping u
                 self.mask_affine=img.affine
                 self.mask_instance=0 # currently active mask
 
-                pixdim=img.header.get("pixdim")
                 self.voxel_size=pixdim[1]*pixdim[2]*pixdim[3] # mm^3
                 self.volume=0
 
@@ -244,7 +244,7 @@ if not os.getenv("subprocess"): # prevent multiple pygame windows from popping u
                 # make the slice in the center of the window
                 # First declaration of `self.loc_slice`
                 self.loc_slice: np.ndarray =(self.window_size/2-self.slc_size/2)
-                self.renderSlice()
+                self.renderSlice(adjust=True)
             else:
                 self.dispMsg("Please use a valid `.nii` or `.nii.gz` file!",offset=(0,30))          
 
@@ -262,10 +262,15 @@ if not os.getenv("subprocess"): # prevent multiple pygame windows from popping u
                             height/2+offset[1]))
 
 
-        def renderSlice(self):  
+        def renderSlice(self, adjust=False):  
             # print("renderSlice")
             # when one of self.loc_slice, self.frame, self.slc_size, self.data changes
             # you should call this function
+
+            def adjustBrightness():
+                datamin, datamax=np.percentile(self.data_backup,[self.lmt_lower,self.lmt_upper])
+                self.data=np.clip(self.data_backup, datamin, datamax)
+                self.data=np.round((self.data - datamin) / (datamax - datamin) * 255).astype(np.uint8)
 
             def renderSliceNumber():
                 color = "yellow"
@@ -337,6 +342,8 @@ if not os.getenv("subprocess"): # prevent multiple pygame windows from popping u
             def render():
                 # ensure it's gray scale
                 # shape: (Height, Width, Channels)
+                if adjust:
+                    adjustBrightness()
                 self.slc = np.repeat(self.data[..., self.frame, None], 3, axis=2)
                 self.surf_slc = pygame.surfarray.make_surface(self.slc)
                 self.surf_slc = pygame.transform.scale(self.surf_slc, self.slc_size)
@@ -393,9 +400,6 @@ if not os.getenv("subprocess"): # prevent multiple pygame windows from popping u
             except requests.exceptions.ConnectionError as e:
                 InternetFail()
 
-        def test(self):
-            self.loadImage(r"C:\Projects\SegmentThor\data\test_project\sub-mrmdCrown_Hep3bLuc_11\ses-iv05\anat\sub-mrmdCrown_Hep3bLuc_11_ses-iv05_acq-TurboRARECoronal_T2w.nii.gz")
-
     def verifyFail():
         with open("SUBSCRIPTION_NEEDED.LOG","w") as f:
             msg="This beta version has expired. Please contact fengh@imcb.a-star.edu.sg for subscription"
@@ -412,6 +416,7 @@ if not os.getenv("subprocess"): # prevent multiple pygame windows from popping u
     def downloadModel(model):
         model_pth=f"checkpoints/sam_{model}.pth"
         if not os.path.isfile(model_pth):
+            print(f"Downloading the model {model} ...")
             model_url={
                 "vit_b":"https://dl.fbaipublicfiles.com/segment_anything/sam_vit_b_01ec64.pth",
                 "vit_l":"https://dl.fbaipublicfiles.com/segment_anything/sam_vit_l_0b3195.pth",
@@ -420,7 +425,6 @@ if not os.getenv("subprocess"): # prevent multiple pygame windows from popping u
             file=requests.get(model_url[model])
             os.makedirs("checkpoints",exist_ok=True)
             with open(model_pth,"wb") as f:
-                print(f"Downloading the model {model}")
                 f.write(file.content)
     
     SegmentThor()

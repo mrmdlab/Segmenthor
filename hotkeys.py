@@ -137,9 +137,10 @@ if not os.getenv("subprocess"):
 
             case pygame.K_j: # Ctrl+J, reset image brightness
                 if pygame.key.get_mods() & pygame.KMOD_CTRL:
-                    self.data=self.data_backup.copy()
                     self.lmt_upper=99.5
-                    self.lmt_lower=0
+                    self.lmt_lower=0.5
+                    self.renderSlice(adjust=True)
+
                     
         self.renderSlice()
 
@@ -200,12 +201,6 @@ if not os.getenv("subprocess"):
         print("active subprocesses: ",len(mp.active_children()))
 
     def adjustLmt(self): # adjust brightness
-        def adjust():
-            datamin, datamax=np.percentile(self.data_backup,[self.lmt_lower,self.lmt_upper])
-            self.data=np.clip(self.data_backup, datamin, datamax)
-            self.data=np.round((self.data - datamin) / (datamax - datamin) * 255).astype(np.uint8)
-            self.renderSlice()
-
         keyUp=self.isKeyDown.get(pygame.K_UP)
         keyDown=self.isKeyDown.get(pygame.K_DOWN)
         keyLeft=self.isKeyDown.get(pygame.K_LEFT)
@@ -228,7 +223,7 @@ if not os.getenv("subprocess"):
             # lower limit can't exceed upper limit
             if self.lmt_lower+2 >= self.lmt_upper:
                 setattr(self,lmt,value)
-            adjust()
+            self.renderSlice(adjust=True)
 
     # !Fix me: incorporate into adjustParameter()
     def adjustMaskAlpha(self):
