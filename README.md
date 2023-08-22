@@ -1,6 +1,8 @@
 ## todo
 
 ### IMPORTANT
+- feature: bounding box prompt
+    - rotating the box?
 - Use not only the mask of the highest score, may be hotkey C to cycle through possible masks
 - optimize multiprocess, maybe try Coroutine or thread
 - cache image embedding in `derivatives/embedding`
@@ -9,9 +11,8 @@
     - Fix bug: anisotropic resolution
     - MPR rendering, multi-planar reformation
         - cross hair
-- feature: bounding box prompt
-    - rotating the box?
 - feature: text prompt
+- consider adjusting brightness in Almond's way
 - explore image enhancement, denoising, superresolution
     - Gaussian filtering (2D, 3D)
     - non local means (trash)
@@ -19,7 +20,6 @@
         - swin-transformer, GAN, transformer, Vision transformer, CNN, ...
 - after adjusting brightness, Should allow user to have the option to compute again.
 - allow adjust brightness for only one slice
-- display file name
 - hotkey for reloading config
 - new mode: ADJUST
 - freeze the conda environment
@@ -43,6 +43,9 @@
 - to compute the image embedding takes a long time, but to predict is very fast. Maybe GPU is necessary
 
 ## changelog
+- try: restrict parallel processes to 3
+- improve: better mask accuracy by means of `multimask_output=False` for multiple control points 
+- display file name
 - Fix bug: swap axes back to the original before saving mask
 - Fix bug: if multiple mask instances in one slice overlap, the volume displayed may be wrong.
 - Fix bug: should adjust brightness immediately after loading the image

@@ -8,6 +8,7 @@ def set_predictor(q,this):
     predictor=SamPredictor(this["sam"])
     predictor.set_image(this["slc"])
     # in main process, check q.full() to know whether the task is done
+    # q.get() # clear "ready"
     q.put(predictor)
     q.put("done")
     print(f"Done with the image embedding of frame {this['frame']+1}")
@@ -103,6 +104,7 @@ if not os.getenv("subprocess"):
                         this["slc"]=self.slc
                         this["frame"]=self.frame
                         q=mp.Queue(maxsize=2)
+                        # q.put("ready")
                         p=mp.Process(target=set_predictor, args=(q,this))
                         self.queues[self.frame]=q
                         self.processes[self.frame]=p
@@ -111,12 +113,14 @@ if not os.getenv("subprocess"):
                 def condition():
                     # in case user presses `Enter` multiple times
                     result = not self.queues[frame].full()
+                    # result = result and (not self.queues[frame].empty())
                     result = result and (not self.hasParsed[frame])
                     result = result and (not p.is_alive())
                     return result
                 def delayStart(frame,p):
                     # If the number of current processes exceeds ncpu, launch other processes later
-                    if len(mp.active_children())<=self.ncpu:
+                    # if len(mp.active_children())<=self.ncpu:
+                    if len(mp.active_children())<=3:
                     # TODO: for trial version, disable parallel computing
                     # if len(mp.active_children())<1:
                         print(f"Computing the image embedding of frame {frame+1}")
@@ -155,9 +159,11 @@ if not os.getenv("subprocess"):
         point_labels=np.array([1]*len(pos_ctrlpnts)+[0]*len(neg_ctrlpnts))
 
         # TODO: maybe try iterative prediction?
+        #! TODO: hotkey C -> cycle through all predicted masks
+        multimask_output=True if self.get_nctrlpnts(self.mask_instance)==1 else False
         predicted_masks, scores, _ = self.predictors[self.frame].predict(point_coords,
-                                                                        point_labels)
-        #! Fix me: hotkey C -> cycle through all predicted masks
+                                                                         point_labels,
+                                                                         multimask_output=multimask_output)
         predicted_mask=predicted_masks[scores.argmax()].astype(np.uint8)
         print("mask quality: ",scores.max())
 

@@ -1,11 +1,14 @@
 ## Info
 - author: MRMD
-- version: 0.3.1
-    - note: the previous releases were trash
+- version: 0.3.2
+    - note: the previous releases were rubbish
 - what's new
     - undo
     - user can specify `mask_path` in `config.json`
     - file name is displayed
+    - bugfix: correct value for volume display
+    - bugfix: display 3D images
+    - bugfix: ctrl+J to adjust brightness
 - what to expect for the next version
     - powered by the state-of-the-art deep learning model, quality of MRI images acquired with fewer averages can be greatly improved, and hence acquisition time can be reduced
 
