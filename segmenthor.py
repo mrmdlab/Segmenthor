@@ -61,6 +61,7 @@ if not os.getenv("subprocess"): # prevent multiple pygame windows from popping u
             self.BGCOLOR=(20,0,0)
             
             self.mode=enums.ZOOMPAN
+            self.box_preview=False
             self.isKeyDown={} # eg. enums.LMB->True, pygame.K_s->False
 
             self.screen = pygame.display.set_mode(self.window_size)
@@ -74,12 +75,12 @@ if not os.getenv("subprocess"): # prevent multiple pygame windows from popping u
 
         def main(self):
             def checkParsed():
-                q:mp.Queue=self.queues.get(self.frame,False)
-                if q and q.full(): # when q == False, it skips the check of q.full()
-                    self.predictors[self.frame]=q.get()
-                    q.get() # clear the queue
-                    self.hasParsed[self.frame]=1
-                    self.msgs[self.frame]=f"The image embedding of frame {self.frame+1} has been computed" 
+                for frame, q in self.queues.items():
+                    if q.full():
+                        self.predictors[frame]=q.get()
+                        q.get() # clear the queue
+                        self.hasParsed[frame]=1
+                        self.msgs[frame]=f"The image embedding of frame {frame+1} has been computed" 
 
             running = True
             while running:
@@ -90,6 +91,11 @@ if not os.getenv("subprocess"): # prevent multiple pygame windows from popping u
 
                         case pygame.MOUSEBUTTONUP:
                             self.isKeyDown[event.button]=False
+                            if event.button==enums.LMB:
+                                if self.box_preview:
+                                    hotkeys.predictMask(self)
+                                    self.renderSlice()
+                                self.box_preview=False
 
                         case pygame.MOUSEBUTTONDOWN:
                             if self.frame!=-1: # ensure an image has been loaded
@@ -119,8 +125,15 @@ if not os.getenv("subprocess"): # prevent multiple pygame windows from popping u
                     case enums.SEGMENT:
                         # disable previewMask() when there has been one control point for the current active mask
                         # ensure the image embedding has been prepared
-                        if self.get_nctrlpnts(self.mask_instance)==0 and self.hasParsed[self.frame]:
-                            self.previewMask()
+                        # enable previewMask() when doing bounding box
+                        if self.hasParsed[self.frame] and (self.get_nctrlpnts(self.mask_instance)==0 or self.box_preview):
+                            if self.box_preview:
+                                box=self.boxes[self.frame][self.mask_instance]
+                                box[[2,3]]=(np.array(pygame.mouse.get_pos())-self.loc_slice)/self.resize_factor
+                                hotkeys.predictMask(self)
+                                self.renderSlice()
+                            else:
+                                self.previewMask()
                 if self.frame!=-1:
                     checkParsed()
                     hotkeys.adjustMaskAlpha(self)
@@ -129,6 +142,38 @@ if not os.getenv("subprocess"): # prevent multiple pygame windows from popping u
 
             pygame.quit()
 
+        def getCtrlPnts(self):
+            inst=self.ctrlpnts[self.frame][self.mask_instance]
+            if len(inst["order"])>0:
+                pos_ctrlpnts=inst["pos"]
+                neg_ctrlpnts=inst["neg"]
+
+                # mouse.pos() -> (Width,Height)
+                # input of predictor.predict() -> (Height,Width,Channels)
+                point_coords=np.array(pos_ctrlpnts+neg_ctrlpnts)[:,::-1]
+                point_labels=np.array([1]*len(pos_ctrlpnts)+[0]*len(neg_ctrlpnts))
+            else:
+                point_coords=None
+                point_labels=None
+            return point_coords,point_labels
+
+        def _predict(self, point_coords, point_labels,multimask_output):
+            # TODO: maybe try iterative prediction?
+            # TODO: hotkey C -> cycle through all predicted masks
+            box=self.boxes[self.frame][self.mask_instance]
+            if box is not None:
+                # must ensure the 1st point is upper left, and the 2nd point is lower right
+                box=box[[[0,2],[1,3]]]
+                pnt1=box.max(axis=-1)
+                pnt2=box.min(axis=-1)
+                box=np.concatenate((pnt1,pnt2))
+                box=box[::-1]
+            masks, scores, _ = self.predictors[self.frame].predict(point_coords,
+                                                                   point_labels,
+                                                                   box,
+                                                                   multimask_output=multimask_output)
+            mask=masks[scores.argmax()].astype(np.uint8) # ndim=2
+            return mask,scores
 
         def previewMask(self):
             # can't do this too often. Limit at most twice per second
@@ -136,14 +181,18 @@ if not os.getenv("subprocess"): # prevent multiple pygame windows from popping u
             if now-self.last_change_time["mask_preview"]>0.5:
                 self.last_change_time["mask_preview"]=now
 
-                # adapted from hotkeys.predictMask()
-                pos=np.array(pygame.mouse.get_pos())        
-                pos_ctrlpnts=[(pos-4-self.loc_slice)/self.resize_factor]
-                point_coords=np.array(pos_ctrlpnts)[:,::-1]
-                point_labels=np.array([1]*len(pos_ctrlpnts))
-                masks, scores, _ = self.predictors[self.frame].predict(point_coords,
-                                                    point_labels)
-                mask=masks[scores.argmax()].astype(np.uint8) # ndim=2
+                if self.box_preview:
+                    point_coords,point_labels=self.getCtrlPnts()
+                    multimask_output=True if self.get_nctrlpnts(self.mask_instance)==1 else False
+                else:
+                    pos=np.array(pygame.mouse.get_pos())
+                    pos_ctrlpnts=[(pos-self.loc_slice)/self.resize_factor]
+                    point_coords=np.array(pos_ctrlpnts)[:,::-1]
+                    point_labels=np.array([1]*len(pos_ctrlpnts))
+                    multimask_output=True
+
+                mask,_ = self._predict(point_coords,point_labels,multimask_output)
+                #! Fix me: preview is not working
 
                 # adapted from renderMask()
                 mask = np.repeat(mask[...,None], 3, axis=2)
@@ -154,8 +203,6 @@ if not os.getenv("subprocess"): # prevent multiple pygame windows from popping u
                 mask.set_alpha(self.mask_alpha)
                 self.renderSlice() # to clear the previous preview mask
                 self.screen.blit(mask, self.loc_slice)
-                # self.surf_slc.blit(mask,(0,0))
-                # for now, self.surf_slc is unusable
             
 
         def loadImage(self,path:str):
@@ -167,7 +214,7 @@ if not os.getenv("subprocess"): # prevent multiple pygame windows from popping u
 
                 self.predictors={} # {frame:SamPredictor}
                 self.processes:dict[int,mp.Process]={} # {frame: mp.Process}
-                self.queues:dict[int,mp.Process]={} #{frame:mp.Queue}
+                self.queues:dict[int,mp.Queue]={} #{frame:mp.Queue}
                 self.screen.fill(self.BGCOLOR)
 
                 img = nib.load(path)
@@ -220,7 +267,15 @@ if not os.getenv("subprocess"): # prevent multiple pygame windows from popping u
                 '''
                 self.masks={}
                 self.ctrlpnts={}
-                self.boxes={} # boxes={frame: instances}
+
+                '''
+                boxes={frame: instances}
+                instances=[None|ndarray]
+                    ndarray:
+                        shape=(4,)
+                        format=pnt1_X, pnt1_Y, pnt2_X, pnt2_Y
+                '''
+                self.boxes={}
                 self.msgs={}
                 for i in range(self.nframes):
                     self.ctrlpnts[i]=[{
@@ -288,13 +343,18 @@ if not os.getenv("subprocess"): # prevent multiple pygame windows from popping u
                 self.screen.blit(slice_number,loc_slc_number)
 
             def renderBoxes():
-                color="green"
-                for rect in self.boxes[self.frame]:
+                for i, rect in enumerate(self.boxes[self.frame]):
                     if rect is not None:
                         rect=rect*self.resize_factor
-                        pnt1=rect[[0,1]]
-                        pnt2=rect[[2,3]]
-                        rect=pygame.Rect(pnt1,pnt2-pnt1)                    
+                        # to deal with dragging from lower left to upper right 
+                        rect=rect[[[0,2],[1,3]]]
+                        pnt1=rect.min(axis=-1)
+                        pnt2=rect.max(axis=-1)
+                        rect=pygame.Rect(pnt1,pnt2-pnt1)
+                        if self.mask_instance==i:
+                            color=enums.RED
+                        else:
+                            color=enums.GREEN
                         pygame.draw.rect(self.surf_slc, color, rect, width=1)
 
             def renderCtrlPnts():
@@ -305,7 +365,10 @@ if not os.getenv("subprocess"): # prevent multiple pygame windows from popping u
                         for point in instance[key]:
                             mode = self.ctrlpnt_font.render("*", True, color[key])
                             # related to appendCtrlPnt()
-                            self.surf_slc.blit(mode,point*self.resize_factor)
+                            # minus 3 because we want the center of point to be shown at where we click
+                            # instead of the upper left coner of the point to be shown at where we click
+                            # this value shall change when font size of control points changes (now 25)
+                            self.surf_slc.blit(mode,point*self.resize_factor-3)
             
             def renderMask():
                 for i,mask in enumerate(self.masks[self.frame]):
@@ -384,7 +447,10 @@ if not os.getenv("subprocess"): # prevent multiple pygame windows from popping u
         # I'm surprised that python supports variable as default parameter for function
         def get_nctrlpnts(self, inst):
             instance=self.ctrlpnts[self.frame][inst]
-            return len(instance["order"])
+            result=len(instance["order"])
+            if self.boxes[self.frame][inst] is not None:
+                result+=1
+            return result
         
         def configurate(self):
             self.config={

@@ -1,9 +1,8 @@
 ## todo
 
 ### IMPORTANT
-- feature: bounding box prompt
-    - rotating the box?
-- Use not only the mask of the highest score, may be hotkey C to cycle through possible masks
+- reduce unresponding time
+- what if press and hold LMB and goes to another slice? Need to cancel box prompt
 - optimize multiprocess, maybe try Coroutine or thread
 - cache image embedding in `derivatives/embedding`
 - makefile for incremental compilation
@@ -26,6 +25,8 @@
 - Ctrl+Y, redo (undo the previous "undo")
 
 ### OTHERS
+- improve: faster rendering by `pygame.display.update()`
+- Use not only the mask of the highest score, may be hotkey C to cycle through possible masks
 - render mask, control points on `self.surf_slc` instead of on `self.screen`
 - Fix bug: when cursor is outside the slice, disable previewMask()
 - Add munual fine editing of masks
@@ -43,6 +44,24 @@
 - to compute the image embedding takes a long time, but to predict is very fast. Maybe GPU is necessary
 
 ## changelog
+- bugfix: preview doesn't agree with predictMask
+- feature: bounding box prompt
+    - should always be real time preview done
+    - update previewMask() done
+    - Shift+LMB to make a box done
+    - update predictMask() done
+    - update hotkey Space done
+    - update renderSlice() done
+- bugfix: the result of box prompt is weird
+- should activate predictMask()
+- in previewMask() shouldn't use mouse position as the control point
+- Ctrl+C to undo bounding box  done
+- update when to delete an empty mask instance
+- refactor: `self._predict()`
+- refactor: `self.getCtrlPnts()`
+- check `pnt2-pnt1`, what if drag from lower left to upper right? it will be negative value
+- improve: no need to go to that slice for checking whether the image embedding has been done
+- bugfix: problem with -4 in control point position
 - try: restrict parallel processes to 3
 - improve: better mask accuracy by means of `multimask_output=False` for multiple control points 
 - display file name

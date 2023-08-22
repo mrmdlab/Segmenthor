@@ -8,7 +8,6 @@ def set_predictor(q,this):
     predictor=SamPredictor(this["sam"])
     predictor.set_image(this["slc"])
     # in main process, check q.full() to know whether the task is done
-    # q.get() # clear "ready"
     q.put(predictor)
     q.put("done")
     print(f"Done with the image embedding of frame {this['frame']+1}")
@@ -36,6 +35,20 @@ if not os.getenv("subprocess"):
             self.renderSlice()
 
     def hotkeys_keyboard(self,event):
+        def postUndo(order):
+            box=self.boxes[self.frame][self.mask_instance]
+            if len(order)==0 and (box is None):
+                self.masks[self.frame].pop(self.mask_instance)
+
+                # if the mask isn't the last mask instance
+                # remove it from `self.ctrlpnts` too
+                if self.mask_instance!=len(self.ctrlpnts[self.frame])-1:
+                    self.ctrlpnts[self.frame].pop(self.mask_instance)
+                    self.boxes[self.frame].pop(self.mask_instance)
+            else:
+                # update the mask after undo
+                predictMask(self)
+
         match event.key:
             case pygame.K_TAB:
                 if self.mode==enums.SEGMENT:
@@ -55,7 +68,13 @@ if not os.getenv("subprocess"):
                         # if the newly created mask hasn't been confirmed
                         # switch to it rather than create one more new mask
                         self.mask_instance=len(self.ctrlpnts[self.frame])-1
-
+            case pygame.K_c:
+                # Ctrl+C, delete the bounding box
+                if pygame.key.get_mods() & pygame.KMOD_CTRL:
+                    if self.boxes[self.frame][self.mask_instance] is not None:
+                        self.boxes[self.frame][self.mask_instance]=None
+                        order=self.ctrlpnts[self.frame][self.mask_instance]["order"]
+                        postUndo(order)
             case pygame.K_z:
                 # Ctrl+Z, undo one control point
                 if pygame.key.get_mods() & pygame.KMOD_CTRL:
@@ -66,17 +85,7 @@ if not os.getenv("subprocess"):
                     if len(order)>0:
                         pn=order.pop() # positive or negative
                         inst[pn].pop()
-
-                        # update the mask after removing one control point
-                        if len(order)>0:
-                            predictMask(self)
-                        else:
-                            self.masks[self.frame].pop(self.mask_instance)
-
-                            # if the mask isn't the last mask instance
-                            # remove it from `self.ctrlpnts` too
-                            if self.mask_instance!=len(self.ctrlpnts[self.frame])-1:
-                                self.ctrlpnts[self.frame].pop(self.mask_instance)
+                        postUndo(order)
                 else:
                     self.mode = enums.ZOOMPAN
 
@@ -105,7 +114,6 @@ if not os.getenv("subprocess"):
                         this["slc"]=self.slc
                         this["frame"]=self.frame
                         q=mp.Queue(maxsize=2)
-                        # q.put("ready")
                         p=mp.Process(target=set_predictor, args=(q,this))
                         self.queues[self.frame]=q
                         self.processes[self.frame]=p
@@ -145,31 +153,13 @@ if not os.getenv("subprocess"):
                     self.lmt_upper=99.5
                     self.lmt_lower=0.5
                     self.renderSlice(adjust=True)
-
-                    
+       
         self.renderSlice()
 
     def predictMask(self):
-        # TODO: support more prompts, eg. bounding box 
-        pos_ctrlpnts=self.ctrlpnts[self.frame][self.mask_instance]["pos"]
-        neg_ctrlpnts=self.ctrlpnts[self.frame][self.mask_instance]["neg"]
-
-        # mouse.pos() -> (Width,Height)
-        # input of predictor.predict() -> (Height,Width,Channels)
-        point_coords=np.array(pos_ctrlpnts+neg_ctrlpnts)[:,::-1]
-        point_labels=np.array([1]*len(pos_ctrlpnts)+[0]*len(neg_ctrlpnts))
-
-        box=self.boxes[self.frame][self.mask_instance]
-        if box is not None:
-            box=box[::-1]
-        # TODO: maybe try iterative prediction?
-        #! TODO: hotkey C -> cycle through all predicted masks
+        point_coords,point_labels=self.getCtrlPnts()
         multimask_output=True if self.get_nctrlpnts(self.mask_instance)==1 else False
-        predicted_masks, scores, _ = self.predictors[self.frame].predict(point_coords,
-                                                                         point_labels,
-                                                                         box,
-                                                                         multimask_output=multimask_output)
-        predicted_mask=predicted_masks[scores.argmax()].astype(np.uint8)
+        predicted_mask, scores = self._predict(point_coords,point_labels,multimask_output)
         print("mask quality: ",scores.max())
 
         my_masks=self.masks[self.frame]
@@ -189,11 +179,7 @@ if not os.getenv("subprocess"):
                 case enums.RMB:
                     ctrlpnts=inst["neg"]
                     order.append("neg")
-
-            # minus 4 because we want the center of point to be shown at where we click
-            # instead of the upper left coner of the point to be shown at where we click
-            # this value shall change when font size of control points changes (now 25)
-            pnt=(np.array(event.pos)-4-self.loc_slice)/self.resize_factor
+            pnt=(np.array(event.pos)-self.loc_slice)/self.resize_factor
             ctrlpnts.append(pnt)
             predictMask(self)
             self.renderSlice()
@@ -207,7 +193,13 @@ if not os.getenv("subprocess"):
 
         # restrict user from adding control points before the image embedding is computed
         elif self.mode == enums.SEGMENT and self.hasParsed[self.frame]:
-            appendCtrlPnt()
+            # Shift+LMB
+            if (pygame.key.get_mods() & pygame.KMOD_SHIFT) and event.button==enums.LMB:
+                pnt=(np.array(event.pos)-self.loc_slice)/self.resize_factor
+                self.boxes[self.frame][self.mask_instance]=np.tile(pnt, 2)
+                self.box_preview=True
+            else:
+                appendCtrlPnt()
 
         print("Mouse position:", event.pos)
         print("active subprocesses: ",len(mp.active_children()))
