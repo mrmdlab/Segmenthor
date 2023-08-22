@@ -12,4 +12,4 @@ copy /Y Tutorial.md %output%\Tutorial.md
 copy /Y start.cmd %output%\start.cmd
 
 cd %output%
-7z a segmenthor_v0.3.2.zip *.pyd *.cmd *.md *.json *.jpg
+7z a segmenthor_v0.4.0.zip *.pyd *.cmd *.md *.json *.jpg

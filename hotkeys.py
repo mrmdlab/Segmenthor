@@ -50,6 +50,7 @@ if not os.getenv("subprocess"):
                             "neg":[],
                             "order":[]
                         })
+                        self.boxes[self.frame].append(None)
                     else:
                         # if the newly created mask hasn't been confirmed
                         # switch to it rather than create one more new mask
@@ -158,11 +159,15 @@ if not os.getenv("subprocess"):
         point_coords=np.array(pos_ctrlpnts+neg_ctrlpnts)[:,::-1]
         point_labels=np.array([1]*len(pos_ctrlpnts)+[0]*len(neg_ctrlpnts))
 
+        box=self.boxes[self.frame][self.mask_instance]
+        if box is not None:
+            box=box[::-1]
         # TODO: maybe try iterative prediction?
         #! TODO: hotkey C -> cycle through all predicted masks
         multimask_output=True if self.get_nctrlpnts(self.mask_instance)==1 else False
         predicted_masks, scores, _ = self.predictors[self.frame].predict(point_coords,
                                                                          point_labels,
+                                                                         box,
                                                                          multimask_output=multimask_output)
         predicted_mask=predicted_masks[scores.argmax()].astype(np.uint8)
         print("mask quality: ",scores.max())

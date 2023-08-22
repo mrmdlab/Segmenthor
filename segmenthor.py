@@ -220,6 +220,7 @@ if not os.getenv("subprocess"): # prevent multiple pygame windows from popping u
                 '''
                 self.masks={}
                 self.ctrlpnts={}
+                self.boxes={} # boxes={frame: instances}
                 self.msgs={}
                 for i in range(self.nframes):
                     self.ctrlpnts[i]=[{
@@ -227,7 +228,8 @@ if not os.getenv("subprocess"): # prevent multiple pygame windows from popping u
                         "neg":[],
                         "order":[]
                     }]
-                    
+
+                    self.boxes[i]=[None]
                     self.masks[i]=[]
                     self.msgs[i]=""
 
@@ -263,7 +265,6 @@ if not os.getenv("subprocess"): # prevent multiple pygame windows from popping u
 
 
         def renderSlice(self, adjust=False):  
-            # print("renderSlice")
             # when one of self.loc_slice, self.frame, self.slc_size, self.data changes
             # you should call this function
 
@@ -286,6 +287,16 @@ if not os.getenv("subprocess"): # prevent multiple pygame windows from popping u
                 pygame.draw.rect(self.screen, self.BGCOLOR, (self.loc_slice[0],self.loc_slice[1]+height,width,font_size+10))
                 self.screen.blit(slice_number,loc_slc_number)
 
+            def renderBoxes():
+                color="green"
+                for rect in self.boxes[self.frame]:
+                    if rect is not None:
+                        rect=rect*self.resize_factor
+                        pnt1=rect[[0,1]]
+                        pnt2=rect[[2,3]]
+                        rect=pygame.Rect(pnt1,pnt2-pnt1)                    
+                        pygame.draw.rect(self.surf_slc, color, rect, width=1)
+
             def renderCtrlPnts():
                 color = {"pos":"blue",
                         "neg":"purple"}
@@ -294,9 +305,7 @@ if not os.getenv("subprocess"): # prevent multiple pygame windows from popping u
                         for point in instance[key]:
                             mode = self.ctrlpnt_font.render("*", True, color[key])
                             # related to appendCtrlPnt()
-                            # TODO: refactor:
-                            # control points should be rendered on the Surface object of the current slice
-                            self.screen.blit(mode,point*self.resize_factor+self.loc_slice)
+                            self.surf_slc.blit(mode,point*self.resize_factor)
             
             def renderMask():
                 for i,mask in enumerate(self.masks[self.frame]):
@@ -311,7 +320,7 @@ if not os.getenv("subprocess"): # prevent multiple pygame windows from popping u
                     slc = pygame.transform.scale(slc, self.slc_size)
                     slc.set_colorkey("black") # any black color will be transparent
                     slc.set_alpha(self.mask_alpha)
-                    self.screen.blit(slc, self.loc_slice)
+                    self.surf_slc.blit(slc,(0,0))
 
             def renderPanel(panel):
                 match panel:
@@ -345,7 +354,6 @@ if not os.getenv("subprocess"): # prevent multiple pygame windows from popping u
                 self.slc = np.repeat(self.data[..., self.frame, None], 3, axis=2)
                 self.surf_slc = pygame.surfarray.make_surface(self.slc)
                 self.surf_slc = pygame.transform.scale(self.surf_slc, self.slc_size)
-                self.screen.blit(self.surf_slc, self.loc_slice)
 
             def clearSlice():
                 # self.surf_slc.fill(self.BGCOLOR)
@@ -356,8 +364,11 @@ if not os.getenv("subprocess"): # prevent multiple pygame windows from popping u
 
             # render other items on top
             renderMask()
-            renderSliceNumber()
+            renderBoxes()
             renderCtrlPnts()
+            self.screen.blit(self.surf_slc, self.loc_slice)
+
+            renderSliceNumber()
             renderPanel("mode")
             renderPanel("volume")
             renderPanel("copyright")
