@@ -1,4 +1,5 @@
 {
     "model":"vit_b",
-    "mask_path":"same"
+    "mask_path":"same",
+    "max_parallel": 2
 }

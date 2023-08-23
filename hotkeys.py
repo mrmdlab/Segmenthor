@@ -3,21 +3,27 @@
 import os
 
 def set_predictor(q,this):
-    from segment_anything import SamPredictor
+    this["semaphore"].acquire()
+    print(f"Computing the image embedding of frame {this['frame']+1}")
+    begin=time.time()
 
+    from segment_anything import SamPredictor
     predictor=SamPredictor(this["sam"])
     predictor.set_image(this["slc"])
     # in main process, check q.full() to know whether the task is done
     q.put(predictor)
     q.put("done")
-    print(f"Done with the image embedding of frame {this['frame']+1}")
+
+    elapsed=round(time.time()-begin)
+    print(f"Done with the image embedding of frame {this['frame']+1}, ({elapsed} s)")
+    this["semaphore"].release()
 
 if not os.getenv("subprocess"):
     import numpy as np
     import enums
     import pygame
-    import multiprocessing as mp
-    from threading import Timer
+    from threading import Thread, Timer
+    from queue import Queue
     import nibabel as nib
     from pathlib import Path
     import time
@@ -113,8 +119,9 @@ if not os.getenv("subprocess"):
                         this["sam"]=self.sam
                         this["slc"]=self.slc
                         this["frame"]=self.frame
-                        q=mp.Queue(maxsize=2)
-                        p=mp.Process(target=set_predictor, args=(q,this))
+                        this["semaphore"]=self.semaphore
+                        q=Queue(maxsize=2)
+                        p=Thread(target=set_predictor,args=(q,this))
                         self.queues[self.frame]=q
                         self.processes[self.frame]=p
 
@@ -123,30 +130,21 @@ if not os.getenv("subprocess"):
                     # in case user presses `Enter` multiple times
                     result = not self.queues[frame].full()
                     # result = result and (not self.queues[frame].empty())
-                    result = result and (not self.hasParsed[frame])
+                    result = result and (not self.hasParsed[frame]) # shouldn't repeat computation
                     result = result and (not p.is_alive())
                     return result
-                def delayStart(frame,p):
-                    # If the number of current processes exceeds ncpu, launch other processes later
-                    # if len(mp.active_children())<=self.ncpu:
-                    if len(mp.active_children())<=3:
-                    # TODO: for trial version, disable parallel computing
-                    # if len(mp.active_children())<1:
-                        print(f"Computing the image embedding of frame {frame+1}")
-                        p.start()
-                    else:
-                        Timer(5,delayStart,args=(p,)).start()
                 
-                # prevent user form pressing `Enter` too often, otherwise a subprocess may be launched twice
-                if len(mp.active_children())==0:
-                    for frame,p in self.processes.items():
-                        if condition():
-                            self.msgs[frame]=f"The image embedding of frame {self.frame+1} is being computed..."
-                    self.renderSlice()
-                    pygame.display.flip()
-                    for frame,p in self.processes.items():
-                        if condition():
-                            delayStart(frame,p)
+                begin_compute=False
+                no_existing_compute=(self.max_parallel-self.semaphore._value)==0
+                for frame,p in self.processes.items():
+                    if condition():
+                        self.isComputing=True
+                        self.nslices_compute+=1
+                        begin_compute=True
+                        self.msgs[frame]=f"The image embedding of frame {frame+1} is being computed..."
+                        p.start()
+                if begin_compute and no_existing_compute:
+                    self.time_begin_compute=time.time()
 
             case pygame.K_j: # Ctrl+J, reset image brightness
                 if pygame.key.get_mods() & pygame.KMOD_CTRL:
@@ -202,7 +200,7 @@ if not os.getenv("subprocess"):
                 appendCtrlPnt()
 
         print("Mouse position:", event.pos)
-        print("active subprocesses: ",len(mp.active_children()))
+        print("active threads: ",self.max_parallel-self.semaphore._value)
 
     def adjustLmt(self): # adjust brightness
         keyUp=self.isKeyDown.get(pygame.K_UP)

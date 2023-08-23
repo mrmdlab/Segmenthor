@@ -6,6 +6,7 @@ if not os.getenv("subprocess"): # prevent multiple pygame windows from popping u
     import nibabel as nib
     import time
     import multiprocessing as mp
+    from threading import Semaphore
     import json
     import sys
 
@@ -25,6 +26,11 @@ if not os.getenv("subprocess"): # prevent multiple pygame windows from popping u
             model=self.config['model']
             self.sam = sam_model_registry[model](checkpoint=f"checkpoints/sam_{model}.pth")
             self.ncpu=mp.cpu_count()
+            self.max_parallel=self.config['max_parallel']
+            self.semaphore=Semaphore(self.max_parallel)
+            self.isComputing=False
+            self.time_begin_compute=0
+            self.nslices_compute=0
             self.frame=-1 # used to check whether an image has been loaded
 
             #! Fix me: better windows size
@@ -81,6 +87,18 @@ if not os.getenv("subprocess"): # prevent multiple pygame windows from popping u
                         q.get() # clear the queue
                         self.hasParsed[frame]=1
                         self.msgs[frame]=f"The image embedding of frame {frame+1} has been computed" 
+            def checkParsingTime():
+                no_existing_compute=(self.max_parallel-self.semaphore._value)==0
+                if self.isComputing and no_existing_compute:
+                    time_total=time.time()-self.time_begin_compute
+                    print("-"*20)
+                    print(f"Number of slices:\t{self.nslices_compute}")
+                    print(f"Time elapsed:    \t{round(time_total)} s")
+                    print(f"Average:         \t{round(time_total/self.nslices_compute)} s/slice")
+                    print("-"*20)
+                    
+                    self.isComputing=False
+                    self.nslices_compute=0
 
             running = True
             while running:
@@ -133,6 +151,7 @@ if not os.getenv("subprocess"): # prevent multiple pygame windows from popping u
                                 self.previewMask()
                 if self.frame!=-1:
                     checkParsed()
+                    checkParsingTime()
                     hotkeys.adjustMaskAlpha(self)
                     hotkeys.adjustLmt(self)
                 pygame.display.flip()
@@ -452,7 +471,8 @@ if not os.getenv("subprocess"): # prevent multiple pygame windows from popping u
         def configurate(self):
             self.config={
                 "model":"vit_b",
-                "mask_path":"same"
+                "mask_path":"same",
+                "max_parallel": 2
             }
             try:
                 with open("config.json") as f:
