@@ -1,2 +1,2 @@
 @echo off
-.\runtime\python.exe -m segmenthor.*.pyd
+.\runtime\python.exe -m segmenthor.pyd

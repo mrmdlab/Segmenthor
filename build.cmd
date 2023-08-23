@@ -3,7 +3,9 @@ set output=dist
 mkdir %output%
 
 nuitka --module --output-dir=%output% --include-module=enums segmenthor.py
+ren %output%\segmenthor.*.pyd segmenthor.pyd
 nuitka --module --output-dir=%output% hotkeys.py
+ren %output%\hotkeys.*.pyd hotkeys.pyd
 del %output%\*.pyi
 
 copy /Y icon.jpg %output%\icon.jpg

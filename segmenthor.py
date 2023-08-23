@@ -92,9 +92,6 @@ if not os.getenv("subprocess"): # prevent multiple pygame windows from popping u
                         case pygame.MOUSEBUTTONUP:
                             self.isKeyDown[event.button]=False
                             if event.button==enums.LMB:
-                                if self.box_preview:
-                                    hotkeys.predictMask(self)
-                                    self.renderSlice()
                                 self.box_preview=False
 
                         case pygame.MOUSEBUTTONDOWN:

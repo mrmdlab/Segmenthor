@@ -1,6 +1,49 @@
 ## todo
 
 ### IMPORTANT
+- bugfix: when too many slices are computed in parallel, an error occurs
+    Exception in thread Thread-6:
+    Exception in thread Thread-7:
+    Traceback (most recent call last):
+    File "C:\Projects\Segmenthor\dist\runtime\Lib\threading.py", line 1038, in _bootstrap_inner
+    Exception in thread Thread-8:
+    Exception in thread Thread-4:
+    Exception in thread Thread-5:
+    Traceback (most recent call last):
+    Traceback (most recent call last):
+        self.run()
+    Exception in thread Thread-9:
+    File "C:\Projects\Segmenthor\dist\runtime\Lib\threading.py", line 1038, in _bootstrap_inner
+    File "C:\Projects\Segmenthor\dist\runtime\Lib\threading.py", line 1394, in run
+    Traceback (most recent call last):
+    Traceback (most recent call last):
+    Traceback (most recent call last):
+    File "C:\Projects\Segmenthor\dist\runtime\Lib\threading.py", line 1038, in _bootstrap_inner
+    File "C:\Projects\Segmenthor\dist\runtime\Lib\threading.py", line 1038, in _bootstrap_inner
+        self.run()
+    File "C:\Projects\Segmenthor\dist\runtime\Lib\threading.py", line 1038, in _bootstrap_inner
+    File "C:\Projects\Segmenthor\dist\runtime\Lib\threading.py", line 1038, in _bootstrap_inner
+        self.run()
+        self.function(*self.args, **self.kwargs)
+        self.run()
+    File "C:\Projects\Segmenthor\dist\runtime\Lib\threading.py", line 1394, in run
+    TypeError: hotkeys_keyboard.<locals>.delayStart() missing 1 required positional argument: 'p'
+    File "C:\Projects\Segmenthor\dist\runtime\Lib\threading.py", line 1394, in run
+        self.run()
+        self.run()
+    File "C:\Projects\Segmenthor\dist\runtime\Lib\threading.py", line 1394, in run
+        self.function(*self.args, **self.kwargs)
+    TypeError: hotkeys_keyboard.<locals>.delayStart() missing 1 required positional argument: 'p'
+        self.function(*self.args, **self.kwargs)
+    File "C:\Projects\Segmenthor\dist\runtime\Lib\threading.py", line 1394, in run
+        self.function(*self.args, **self.kwargs)
+    File "C:\Projects\Segmenthor\dist\runtime\Lib\threading.py", line 1394, in run
+    TypeError: hotkeys_keyboard.<locals>.delayStart() missing 1 required positional argument: 'p'
+        self.function(*self.args, **self.kwargs)
+    TypeError: hotkeys_keyboard.<locals>.delayStart() missing 1 required positional argument: 'p'
+    TypeError: hotkeys_keyboard.<locals>.delayStart() missing 1 required positional argument: 'p'
+        self.function(*self.args, **self.kwargs)
+    TypeError: hotkeys_keyboard.<locals>.delayStart() missing 1 required positional argument: 'p'
 - reduce unresponding time
 - what if press and hold LMB and goes to another slice? Need to cancel box prompt
 - optimize multiprocess, maybe try Coroutine or thread
@@ -44,6 +87,7 @@
 - to compute the image embedding takes a long time, but to predict is very fast. Maybe GPU is necessary
 
 ## changelog
+- rename compile target
 - bugfix: preview doesn't agree with predictMask
 - feature: bounding box prompt
     - should always be real time preview done
