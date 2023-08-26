@@ -1,6 +1,6 @@
 ## Info
 - author: MRMD
-- version: 0.4.1
+- version: 0.5.0
     - note: the previous releases were garbage
 - what's new
     - Shift+LMB to use bounding box prompt
@@ -21,7 +21,6 @@
 ### reminder
 - **Disable Chinese input method, if any, before using this software**
 - This trial version will expire soon. Please contact fengh@imcb.a-star.edu.sg for subscription.
-- it's normal to get unresponding for a few seconds after pressing `Enter` because computing the image embedding takes up a lot of CPU resource. It's more likely to get unresponding if you are using `vit_l` or `vit_h`
 
 ### ZOOMPAN
 - left mouse button to pan

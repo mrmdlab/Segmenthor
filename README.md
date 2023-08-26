@@ -1,6 +1,16 @@
 ## todo
 
 ### IMPORTANT
+- feature: new mode ADJUST
+    - t, enter ADJUST mode. Also add or remove the current slice to the list
+    - the list of SEGMENT and ADJUST are the same
+    - Enter, begin computing the adjusted image
+    - display the original image side by side
+    - Shift+S, save the adjusted image
+    - algorithms
+        - [DRUnet](https://github.com/cszn/DPIR) (deep residual U-net)
+        - [Gaussian blur](https://docs.opencv.org/4.x/d4/d13/tutorial_py_filtering.html)
+        - [NLM](https://docs.opencv.org/4.8.0/d5/d69/tutorial_py_non_local_means.html) (non-local means)
 - try with coroutine, multiple thread and mutiple process
 - bugfix: deal with exceptions 
     - pressing Space and doing bounding box
@@ -48,6 +58,7 @@
 - to compute the image embedding takes a long time, but to predict is very fast. Maybe GPU is necessary
 
 ## changelog
+- bugfix: Space, and then should go to the new mask isntance right away
 - record the elapsed time for computing image embedding
     - record the total time and average time
     - determine the optimal number of parallel tasks

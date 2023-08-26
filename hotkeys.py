@@ -63,17 +63,13 @@ if not os.getenv("subprocess"):
             case pygame.K_SPACE:
                 if self.mode==enums.SEGMENT:
                     if self.get_nctrlpnts(-1)>0:
-                        self.mask_instance+=1
                         self.ctrlpnts[self.frame].append({
                             "pos":[],
                             "neg":[],
                             "order":[]
                         })
                         self.boxes[self.frame].append(None)
-                    else:
-                        # if the newly created mask hasn't been confirmed
-                        # switch to it rather than create one more new mask
-                        self.mask_instance=len(self.ctrlpnts[self.frame])-1
+                    self.mask_instance=len(self.ctrlpnts[self.frame])-1
             case pygame.K_c:
                 # Ctrl+C, delete the bounding box
                 if pygame.key.get_mods() & pygame.KMOD_CTRL:
