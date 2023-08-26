@@ -51,6 +51,8 @@
 | Ctrl+Z      | undo one control point of the current mask instance       |
 | Ctrl+C      | delete the bounding box                                   |
 | Shift+LMB   | press and hold Shift to draw a bounding box               |
+| [ and ]     | switch adjusting algorithm                                |
+| , and .     | increase or decrease adjusting strength                   |
 
 ## config
 ### specification

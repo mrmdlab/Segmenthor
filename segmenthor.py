@@ -5,10 +5,10 @@ if not os.getenv("subprocess"): # prevent multiple pygame windows from popping u
     import numpy as np
     import nibabel as nib
     import time
-    import multiprocessing as mp
     from threading import Semaphore
     import json
     import sys
+    from queue import Queue
 
     from segment_anything import sam_model_registry
     import enums
@@ -25,7 +25,9 @@ if not os.getenv("subprocess"): # prevent multiple pygame windows from popping u
 
             model=self.config['model']
             self.sam = sam_model_registry[model](checkpoint=f"checkpoints/sam_{model}.pth")
-            self.ncpu=mp.cpu_count()
+            # self.ncpu=mp.cpu_count()
+            self.algorithm=0 # serial number of algorithm, see enums.ALGORITHMS
+            self.strength=3 # denoising strength for ADJUST
             self.max_parallel=self.config['max_parallel']
             self.semaphore=Semaphore(self.max_parallel)
             self.isComputing=False
@@ -39,10 +41,12 @@ if not os.getenv("subprocess"): # prevent multiple pygame windows from popping u
             # set up parameters of panel
             self.panel_size=(140,20) # (width, height)
             self.panel_dests={
-                "mode":(15*1,15),
-                "volume":(15*11,15),
-                "copyright":(15*21,15),
-                "msg":(0,self.window_size[1]-40)
+                "mode":(15*1,15*1),
+                "volume":(15*11,15*1),
+                "copyright":(15*21,15*1),
+                "msg":(0,self.window_size[1]-40),
+                "strength":(15*1,15*2),
+                "algorithm":(15*11,15*2),
             }
             self.panel_color = "yellow"
 
@@ -56,6 +60,8 @@ if not os.getenv("subprocess"): # prevent multiple pygame windows from popping u
             self.surf_volume=pygame.Surface(self.panel_size)
             self.surf_copyright=pygame.Surface((350,20))
             self.surf_msg=pygame.Surface((self.window_size[0],self.panel_font_size+10))
+            self.surf_strength=pygame.Surface(self.panel_size)
+            self.surf_algorithm=pygame.Surface((180,20))
             
             self.mask_alpha=90 # 0~255
             self.last_change_time={"mask_alpha":0,
@@ -80,13 +86,6 @@ if not os.getenv("subprocess"): # prevent multiple pygame windows from popping u
             self.main()
 
         def main(self):
-            def checkParsed():
-                for frame, q in self.queues.items():
-                    if q.full():
-                        self.predictors[frame]=q.get()
-                        q.get() # clear the queue
-                        self.hasParsed[frame]=1
-                        self.msgs[frame]=f"The image embedding of frame {frame+1} has been computed" 
             def checkParsingTime():
                 no_existing_compute=(self.max_parallel-self.semaphore._value)==0
                 if self.isComputing and no_existing_compute:
@@ -141,7 +140,7 @@ if not os.getenv("subprocess"): # prevent multiple pygame windows from popping u
                         # disable previewMask() when there has been one control point for the current active mask
                         # ensure the image embedding has been prepared
                         # enable previewMask() when doing bounding box
-                        if self.hasParsed[self.frame] and (self.get_nctrlpnts(self.mask_instance)==0 or self.box_preview):
+                        if self.hasParsed[self.frame]==enums.HAS_PARSED and (self.get_nctrlpnts(self.mask_instance)==0 or self.box_preview):
                             if self.box_preview:
                                 box=self.boxes[self.frame][self.mask_instance]
                                 box[[2,3]]=(np.array(pygame.mouse.get_pos())-self.loc_slice)/self.resize_factor
@@ -150,7 +149,6 @@ if not os.getenv("subprocess"): # prevent multiple pygame windows from popping u
                             else:
                                 self.previewMask()
                 if self.frame!=-1:
-                    checkParsed()
                     checkParsingTime()
                     hotkeys.adjustMaskAlpha(self)
                     hotkeys.adjustLmt(self)
@@ -227,10 +225,10 @@ if not os.getenv("subprocess"): # prevent multiple pygame windows from popping u
             if isPathValid:
                 pygame.display.set_caption(f"Segmenthor {enums.VERSION} {os.path.basename(path)}")
                 self.mode=enums.ZOOMPAN # when loading a new image, set ZOOMPAN mode by default
+                self.queue=Queue()
+                self.list=[]
 
                 self.predictors={} # {frame:SamPredictor}
-                self.processes:dict[int,mp.Process]={} # {frame: mp.Process}
-                self.queues:dict[int,mp.Queue]={} #{frame:mp.Queue}
                 self.screen.fill(self.BGCOLOR)
 
                 img = nib.load(path)
@@ -418,6 +416,12 @@ if not os.getenv("subprocess"): # prevent multiple pygame windows from popping u
                     case "msg":
                         text=self.msgs[self.frame]
                         surf=self.surf_msg
+                    case "algorithm":
+                        text=f"Algorithm: {enums.ALGORITHMS[self.algorithm]}"
+                        surf=self.surf_algorithm
+                    case "strength":
+                        text=f"Strength: {self.strength}"
+                        surf=self.surf_strength
                 surf.fill(self.BGCOLOR)
                 _,height=self.panel_font.size(text)
                 for i,t in enumerate(text.splitlines()):
@@ -452,6 +456,9 @@ if not os.getenv("subprocess"): # prevent multiple pygame windows from popping u
             renderPanel("volume")
             renderPanel("copyright")
             renderPanel("msg")
+            if self.mode == enums.ADJUST:
+                renderPanel("algorithm")
+                renderPanel("strength")
 
         def getMask(self):
             mask=np.zeros_like(self.data)

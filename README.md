@@ -1,12 +1,17 @@
 ## todo
 
 ### IMPORTANT
+- Ctrl+J: reset adjustment, also change Tutorial.md
 - feature: new mode ADJUST
+    - [ and ] to switch algorithm done
+    - , and . to adjust denoising strength done
+    - allow user to compute image embedding again
     - t, enter ADJUST mode. Also add or remove the current slice to the list
     - the list of SEGMENT and ADJUST are the same
     - Enter, begin computing the adjusted image
     - display the original image side by side
     - Shift+S, save the adjusted image
+    - two new panels: strength and algorithm done
     - algorithms
         - [DRUnet](https://github.com/cszn/DPIR) (deep residual U-net)
         - [Gaussian blur](https://docs.opencv.org/4.x/d4/d13/tutorial_py_filtering.html)
@@ -30,7 +35,6 @@
     - non local means (trash)
     - deep learning, has yet to find a good model
         - swin-transformer, GAN, transformer, Vision transformer, CNN, ...
-- after adjusting brightness, Should allow user to have the option to compute again.
 - allow adjust brightness for only one slice
 - hotkey for reloading config
 - new mode: ADJUST
@@ -38,7 +42,6 @@
 - Ctrl+Y, redo (undo the previous "undo")
 
 ### OTHERS
-- delete self.processes after computing is done?
 - improve: faster rendering by `pygame.display.update()`
 - Use not only the mask of the highest score, may be hotkey C to cycle through possible masks
 - render mask, control points on `self.surf_slc` instead of on `self.screen`
@@ -58,6 +61,9 @@
 - to compute the image embedding takes a long time, but to predict is very fast. Maybe GPU is necessary
 
 ## changelog
+- completely change to threads
+- refactor: self.hasParsed
+- refactor: abandon self.threads
 - bugfix: Space, and then should go to the new mask isntance right away
 - record the elapsed time for computing image embedding
     - record the total time and average time

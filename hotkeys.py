@@ -2,31 +2,33 @@
 
 import os
 
-def set_predictor(q,this):
-    this["semaphore"].acquire()
-    print(f"Computing the image embedding of frame {this['frame']+1}")
+def set_predictor(self,frame):
+    self.semaphore.acquire()
+    print(f"Computing the image embedding of frame {frame+1}")
     begin=time.time()
 
     from segment_anything import SamPredictor
-    predictor=SamPredictor(this["sam"])
-    predictor.set_image(this["slc"])
-    # in main process, check q.full() to know whether the task is done
-    q.put(predictor)
-    q.put("done")
+    predictor=SamPredictor(self.sam)
+    slc = np.repeat(self.data[..., frame, None], 3, axis=2)
+    predictor.set_image(slc)
+    self.predictors[frame]=predictor
+    self.hasParsed[frame]=enums.HAS_PARSED
+    self.msgs[frame]=f"Done with the image embedding of frame {frame+1}"
 
     elapsed=round(time.time()-begin)
-    print(f"Done with the image embedding of frame {this['frame']+1}, ({elapsed} s)")
-    this["semaphore"].release()
+    print(f"Done with the image embedding of frame {frame+1}, ({elapsed} s)")
+    self.semaphore.release()
 
 if not os.getenv("subprocess"):
     import numpy as np
     import enums
     import pygame
     from threading import Thread, Timer
-    from queue import Queue
     import nibabel as nib
     from pathlib import Path
     import time
+
+    from adjust import adjust
 
     def throughSlices(self, event):
         temp = -1
@@ -39,6 +41,20 @@ if not os.getenv("subprocess"):
             self.frame=temp
             self.mask_instance=len(self.ctrlpnts[self.frame])-1
             self.renderSlice()
+
+    def restoreMsg(self, frame, msg):
+        self.msgs[frame]=msg
+
+    def listAppendRemove(self):
+        # TODO: should allow user to compute image embedding again
+        if self.hasParsed[self.frame]==enums.NOT_PARSED:
+            if self.frame in self.list:
+                self.msgs[self.frame]=f"Removed frame {self.frame+1} from the list"
+                self.list.remove(self.frame)
+                Timer(4,restoreMsg,args=(self, self.frame,"")).start()
+            else:
+                self.msgs[self.frame]=f"Added frame {self.frame+1} to the list"
+                self.list.append(self.frame)
 
     def hotkeys_keyboard(self,event):
         def postUndo(order):
@@ -54,6 +70,10 @@ if not os.getenv("subprocess"):
             else:
                 # update the mask after undo
                 predictMask(self)
+        def postSwitchAlgorithm():
+            self.algorithm%=len(enums.ALGORITHMS)
+            if enums.ALGORITHMS[self.algorithm]=="GaussianBlur" and self.strength%2==0:
+                self.strength+=1
 
         match event.key:
             case pygame.K_TAB:
@@ -90,64 +110,64 @@ if not os.getenv("subprocess"):
                         postUndo(order)
                 else:
                     self.mode = enums.ZOOMPAN
-
+            case pygame.K_t:
+                # TODO
+                self.mode = enums.ADJUST
+                listAppendRemove(self)
             case pygame.K_s:
                 if pygame.key.get_mods() & pygame.KMOD_CTRL: # Ctrl+S
                     saveMask(self)
+                elif pygame.key.get_mods() & pygame.KMOD_SHIFT: # Shift+S
+                    saveAdjustedImage(self)
                 else: # S
                     self.mode = enums.SEGMENT
-                    p=self.processes.get(self.frame)
-                    if self.hasParsed[self.frame]:
-                        self.msgs[self.frame]=f"The image embedding of frame {self.frame+1} has been computed"
-                    elif p is not None:
-                        if p.is_alive():
-                            self.msgs[self.frame]=f"The image embedding of frame {self.frame+1} is being computed..."
-                        else:
-                            self.msgs[self.frame]=f"Removed frame {self.frame+1} from the list"
-                            self.queues.pop(self.frame)
-                            self.processes.pop(self.frame)
-                            def restoreMsg(frame):
-                                self.msgs[frame]=""
-                            Timer(4,restoreMsg,args=(self.frame,)).start()
-                    else:
-                        self.msgs[self.frame]=f"Ready to compute the image embedding of frame {self.frame+1}"
-                        this={}
-                        this["sam"]=self.sam
-                        this["slc"]=self.slc
-                        this["frame"]=self.frame
-                        this["semaphore"]=self.semaphore
-                        q=Queue(maxsize=2)
-                        p=Thread(target=set_predictor,args=(q,this))
-                        self.queues[self.frame]=q
-                        self.processes[self.frame]=p
-
+                    listAppendRemove(self)
             case pygame.K_RETURN:
-                def condition():
-                    # in case user presses `Enter` multiple times
-                    result = not self.queues[frame].full()
-                    # result = result and (not self.queues[frame].empty())
-                    result = result and (not self.hasParsed[frame]) # shouldn't repeat computation
-                    result = result and (not p.is_alive())
-                    return result
-                
-                begin_compute=False
-                no_existing_compute=(self.max_parallel-self.semaphore._value)==0
-                for frame,p in self.processes.items():
-                    if condition():
+                if self.mode==enums.SEGMENT:
+                    begin_compute=False
+                    no_existing_compute=(self.max_parallel-self.semaphore._value)==0
+                    for frame in self.list:
                         self.isComputing=True
                         self.nslices_compute+=1
                         begin_compute=True
-                        self.msgs[frame]=f"The image embedding of frame {frame+1} is being computed..."
-                        p.start()
-                if begin_compute and no_existing_compute:
-                    self.time_begin_compute=time.time()
+                        self.hasParsed[frame]=enums.BEING_PARSED
+                        self.msgs[frame]=f"Computing the image embedding of frame {frame+1}..."
+                        Thread(target=set_predictor, args=(self, frame)).start()
+                    if begin_compute and no_existing_compute:
+                        self.time_begin_compute=time.time()
+                elif self.mode == enums.ADJUST:
+                    for frame in self.list:
+                        self.queue.put(frame)
+                        self.hasParsed[frame]=enums.BEING_ADJUSTED
+                        self.msgs[frame]=f"Computing the adjusted image of frame {frame+1}..."
+                    Thread(target=adjust,args=(self,)).start()
+                self.list=[]
+            case pygame.K_LEFTBRACKET:
+                self.algorithm-=1
+                postSwitchAlgorithm()
+            case pygame.K_RIGHTBRACKET:
+                self.algorithm+=1
+                postSwitchAlgorithm()
+            case pygame.K_COMMA:
+                temp=self.strength-1
+                # GaussianBlur requires the strength must be positive and odd
+                if enums.ALGORITHMS[self.algorithm]=="GaussianBlur" and temp%2==0:
+                    temp-=1
+                if temp>0:
+                    self.strength=temp
+            case pygame.K_PERIOD:
+                self.strength+=1
+                if enums.ALGORITHMS[self.algorithm]=="GaussianBlur" and self.strength%2==0:
+                    self.strength+=1
+
 
             case pygame.K_j: # Ctrl+J, reset image brightness
+                # !Fixme: reset adjustment
                 if pygame.key.get_mods() & pygame.KMOD_CTRL:
                     self.lmt_upper=99.5
                     self.lmt_lower=0.5
                     self.renderSlice(adjust=True)
-       
+
         self.renderSlice()
 
     def predictMask(self):
@@ -186,7 +206,7 @@ if not os.getenv("subprocess"):
                 self.old_resize_factor=self.resize_factor.copy()
 
         # restrict user from adding control points before the image embedding is computed
-        elif self.mode == enums.SEGMENT and self.hasParsed[self.frame]:
+        elif self.mode == enums.SEGMENT and self.hasParsed[self.frame]==enums.HAS_PARSED:
             # Shift+LMB
             if (pygame.key.get_mods() & pygame.KMOD_SHIFT) and event.button==enums.LMB:
                 pnt=(np.array(event.pos)-self.loc_slice)/self.resize_factor
@@ -254,7 +274,9 @@ if not os.getenv("subprocess"):
                 # keep the center pixel at the same location
                 self.loc_slice=self.old_loc_slice+self.old_slc_size/2-self.slc_size/2
                 self.renderSlice()
-
+    def saveAdjustedImage():
+        # TODO
+        pass
     def saveMask(self):
         # automatically save to `BIDS_folder/derivatives/masks/sub-xx/ses-xx/anat/xxx_mask.nii(.gz)`
         def getPath()->Path:
@@ -267,7 +289,7 @@ if not os.getenv("subprocess"):
                 bids_folder=path.parents[3] # BIDS_folder
                 path=bids_folder/"derivatives/masks"/path.relative_to(bids_folder)
             return path
-        
+
         mask=self.getMask()
         path=getPath()
         mask=nib.Nifti1Image(mask,self.mask_affine,self.mask_header)
@@ -278,10 +300,8 @@ if not os.getenv("subprocess"):
         print(msg)
         old_msg=self.msgs[self.frame]
         self.msgs[self.frame]=msg
-        def restoreMsg():
-            self.msgs[self.frame]=old_msg
         # message is displayed for 10 seconds, then disappear
-        Timer(10,restoreMsg).start()
+        Timer(10,restoreMsg,args=(self, self.frame, old_msg)).start()
 
 # avoid importing unnecessary packages in subprocesses
 os.environ["subprocess"]="1"

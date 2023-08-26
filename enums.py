@@ -2,6 +2,19 @@ import numpy as np
 
 ZOOMPAN = "ZOOMPAN"
 SEGMENT = "SEGMENT"
+ADJUST = "ADJUST"
+
+ALGORITHMS=[
+    "nlm",
+    "DRUnet",
+    "GaussianBlur"
+]
+
+NOT_PARSED=0
+HAS_PARSED=1
+BEING_PARSED=2
+BEING_ADJUSTED=3
+
 LMB=1 # Left mouse button
 MMB=2 # Middle mouse button
 RMB=3 # Right mouse button

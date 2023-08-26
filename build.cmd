@@ -3,7 +3,7 @@ set output=dist
 mkdir %output%
 del /Q %output%\*
 
-nuitka --module --output-dir=%output% --include-module=enums segmenthor.py
+nuitka --module --output-dir=%output% --include-module=enums --include-module=adjust segmenthor.py
 nuitka --module --output-dir=%output% hotkeys.py
 ren %output%\segmenthor.*.pyd segmenthor.pyd
 ren %output%\hotkeys.*.pyd hotkeys.pyd
