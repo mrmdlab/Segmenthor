@@ -3,10 +3,13 @@ set output=dist
 mkdir %output%
 del /Q %output%\*
 
-nuitka --module --output-dir=%output% --include-module=enums --include-module=adjust segmenthor.py
-nuitka --module --output-dir=%output% hotkeys.py
+nuitka --module --output-dir=%output% ^
+--include-module=enums ^
+--include-module=hotkeys ^
+--include-module=adjust ^
+--include-package=models ^
+segmenthor.py
 ren %output%\segmenthor.*.pyd segmenthor.pyd
-ren %output%\hotkeys.*.pyd hotkeys.pyd
 del %output%\*.pyi
 
 copy /Y icon.jpg %output%\icon.jpg

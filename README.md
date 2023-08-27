@@ -6,7 +6,6 @@
 - feature: new mode ADJUST
     - continuously adjust denoising strength
     - Esc to set the current slice status to "NOT_PARSED" so that user can compute image embedding again
-    - display the original image side by side
 - bugfix: deal with exceptions 
     - pressing Space and doing bounding box
     - change to next file before image embedding is done
@@ -64,6 +63,7 @@
     - the list of SEGMENT and ADJUST are the same done
     - t, enter ADJUST mode. Also add or remove the current slice to the list done
     - Enter, begin computing the adjusted image done
+    - display the original image side by side (abandoned, it can be done in ITK-SNAP)
 - completely change to threads
 - refactor: self.hasParsed
 - refactor: abandon self.threads
