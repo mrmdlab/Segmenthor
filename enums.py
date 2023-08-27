@@ -5,8 +5,8 @@ SEGMENT = "SEGMENT"
 ADJUST = "ADJUST"
 
 ALGORITHMS=[
-    "nlm",
     "DRUnet",
+    "nlm",
     "GaussianBlur"
 ]
 

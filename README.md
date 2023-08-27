@@ -1,25 +1,12 @@
 ## todo
 
 ### IMPORTANT
-- bugfix: brightness adjustment overwrites denoising
-- Ctrl+J: reset adjustment, also change Tutorial.md
+- CLI to adjust all images in the BIDS folder
+- Shift+ArrowKey to adjust brightness for the current slice
 - feature: new mode ADJUST
-    - algorithms
-        - [DRUnet](https://github.com/cszn/DPIR) (deep residual U-net) done
-        - [Gaussian blur](https://docs.opencv.org/4.x/d4/d13/tutorial_py_filtering.html) done
-        - [NLM](https://docs.opencv.org/4.8.0/d5/d69/tutorial_py_non_local_means.html) (non-local means) done
-    - [ and ] to switch algorithm done
-    - , and . to adjust denoising strength done
-    - two new panels: strength and algorithm done
-    - the list of SEGMENT and ADJUST are the same done
-    - t, enter ADJUST mode. Also add or remove the current slice to the list done
-    - Enter, begin computing the adjusted image done
-    - download checkpoint automatically
-    - Shift+S, save the adjusted image
     - continuously adjust denoising strength
-    - allow user to compute image embedding again
+    - Esc to set the current slice status to "NOT_PARSED" so that user can compute image embedding again
     - display the original image side by side
-- try with coroutine, multiple thread and mutiple process
 - bugfix: deal with exceptions 
     - pressing Space and doing bounding box
     - change to next file before image embedding is done
@@ -33,11 +20,6 @@
         - cross hair
 - feature: text prompt
 - consider adjusting brightness in Almond's way
-- explore image enhancement, denoising, superresolution
-    - Gaussian filtering (2D, 3D)
-    - non local means (trash)
-    - deep learning, has yet to find a good model
-        - swin-transformer, GAN, transformer, Vision transformer, CNN, ...
 - allow adjust brightness for only one slice
 - hotkey for reloading config
 - new mode: ADJUST
@@ -45,6 +27,7 @@
 - Ctrl+Y, redo (undo the previous "undo")
 
 ### OTHERS
+- try with coroutine, multiple thread and mutiple process
 - improve: faster rendering by `pygame.display.update()`
 - Use not only the mask of the highest score, may be hotkey C to cycle through possible masks
 - render mask, control points on `self.surf_slc` instead of on `self.screen`
@@ -64,6 +47,23 @@
 - to compute the image embedding takes a long time, but to predict is very fast. Maybe GPU is necessary
 
 ## changelog
+- hotkey: Ctrl+T to select all or deselect all
+- brightness adjustment has no effect on slices that are after adjustment, unless Shift+J or Ctrl+J are activated
+- Ctrl+J: reset adjustment, also change Tutorial.md
+- feature: new mode ADJUST
+    - algorithms
+        - [DRUnet](https://github.com/cszn/DPIR) (deep residual U-net) done
+        - [Gaussian blur](https://docs.opencv.org/4.x/d4/d13/tutorial_py_filtering.html) done
+        - [NLM](https://docs.opencv.org/4.8.0/d5/d69/tutorial_py_non_local_means.html) (non-local means) done
+    - Shift+J, reset only one slice done
+    - download checkpoint automatically done
+    - Shift+S, save the adjusted image done
+    - [ and ] to switch algorithm done
+    - , and . to adjust denoising strength done
+    - two new panels: strength and algorithm done
+    - the list of SEGMENT and ADJUST are the same done
+    - t, enter ADJUST mode. Also add or remove the current slice to the list done
+    - Enter, begin computing the adjusted image done
 - completely change to threads
 - refactor: self.hasParsed
 - refactor: abandon self.threads

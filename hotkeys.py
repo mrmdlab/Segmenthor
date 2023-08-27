@@ -45,17 +45,6 @@ if not os.getenv("subprocess"):
     def restoreMsg(self, frame, msg):
         self.msgs[frame]=msg
 
-    def listAppendRemove(self):
-        # TODO: should allow user to compute image embedding again
-        if self.hasParsed[self.frame]==enums.NOT_PARSED:
-            if self.frame in self.list:
-                self.msgs[self.frame]=f"Removed frame {self.frame+1} from the list"
-                self.list.remove(self.frame)
-                Timer(4,restoreMsg,args=(self, self.frame,"")).start()
-            else:
-                self.msgs[self.frame]=f"Added frame {self.frame+1} to the list"
-                self.list.append(self.frame)
-
     def hotkeys_keyboard(self,event):
         def postUndo(order):
             box=self.boxes[self.frame][self.mask_instance]
@@ -74,7 +63,17 @@ if not os.getenv("subprocess"):
             self.algorithm%=len(enums.ALGORITHMS)
             if enums.ALGORITHMS[self.algorithm]=="GaussianBlur" and self.strength%2==0:
                 self.strength+=1
-
+        def listAppendRemove(frame):
+            # TODO: should allow user to compute image embedding again
+            if self.hasParsed[frame]==enums.NOT_PARSED:
+                if frame in self.list:
+                    self.msgs[frame]=f"Removed frame {frame+1} from the list"
+                    self.list.remove(frame)
+                    Timer(4,restoreMsg,args=(self, frame,"")).start()
+                else:
+                    self.msgs[frame]=f"Added frame {frame+1} to the list"
+                    self.list.append(frame)
+        
         match event.key:
             case pygame.K_TAB:
                 if self.mode==enums.SEGMENT:
@@ -111,9 +110,18 @@ if not os.getenv("subprocess"):
                 else:
                     self.mode = enums.ZOOMPAN
             case pygame.K_t:
-                # TODO
-                self.mode = enums.ADJUST
-                listAppendRemove(self)
+                if pygame.key.get_mods() & pygame.KMOD_CTRL: # Ctrl+T, select all or deselect all
+                    selectAll=len(self.list)!=self.data.shape[2]
+                    for frame in range(self.data.shape[2]):
+                        if selectAll:
+                            condition = frame not in self.list
+                        else:
+                            condition = frame in self.list
+                        if condition:
+                            listAppendRemove(frame)
+                else:
+                    self.mode = enums.ADJUST
+                    listAppendRemove(self.frame)
             case pygame.K_s:
                 if pygame.key.get_mods() & pygame.KMOD_CTRL: # Ctrl+S
                     saveMask(self)
@@ -121,7 +129,7 @@ if not os.getenv("subprocess"):
                     saveAdjustedImage(self)
                 else: # S
                     self.mode = enums.SEGMENT
-                    listAppendRemove(self)
+                    listAppendRemove(self.frame)
             case pygame.K_RETURN:
                 if self.mode==enums.SEGMENT:
                     begin_compute=False
@@ -161,13 +169,20 @@ if not os.getenv("subprocess"):
                 if enums.ALGORITHMS[self.algorithm]=="GaussianBlur" and self.strength%2==0:
                     self.strength+=1
 
-            case pygame.K_j: # Ctrl+J, reset image brightness
-                # !Fixme: reset adjustment
+            case pygame.K_j:
+                # Ctrl+J, reset image brightness
                 if pygame.key.get_mods() & pygame.KMOD_CTRL:
                     self.lmt_upper=99.5
                     self.lmt_lower=0.5
+                    self.data_adjusted={}
                     self.renderSlice(adjust=True)
-
+                # Shift+J, remove the effect of image adjustment for the current slice
+                elif pygame.key.get_mods() & pygame.KMOD_SHIFT:
+                    datamin, datamax=np.percentile(self.data_backup,[self.lmt_lower,self.lmt_upper])
+                    data=np.clip(self.data_backup[...,self.frame], datamin, datamax)
+                    data=np.round((data - datamin) / (datamax - datamin) * 255).astype(np.uint8)
+                    self.data[...,self.frame]=data
+                    self.data_adjusted.pop(self.frame,None)
         self.renderSlice()
 
     def predictMask(self):
@@ -274,34 +289,43 @@ if not os.getenv("subprocess"):
                 # keep the center pixel at the same location
                 self.loc_slice=self.old_loc_slice+self.old_slc_size/2-self.slc_size/2
                 self.renderSlice()
-    def saveAdjustedImage():
-        # TODO
-        pass
-    def saveMask(self):
-        # automatically save to `BIDS_folder/derivatives/masks/sub-xx/ses-xx/anat/xxx_mask.nii(.gz)`
-        def getPath()->Path:
-            path=Path(self.path)
-            name=path.name
-            p1=os.path.splitext(name)
-            p2=os.path.splitext(p1[0])
-            path=path.with_name(p2[0]+"_mask"+p2[1]+p1[1]) # change file name, adding "_mask"
-            if self.config["mask_path"] == "derivatives":
-                bids_folder=path.parents[3] # BIDS_folder
-                path=bids_folder/"derivatives/masks"/path.relative_to(bids_folder)
-            return path
 
-        mask=self.getMask()
-        path=getPath()
-        mask=nib.Nifti1Image(mask,self.mask_affine,self.mask_header)
-        # TODO: user may want to save individual masks for every tumor
+    def getPath(self, suffix)->Path:
+        path=Path(self.path)
+        name=path.name
+        p1=os.path.splitext(name)
+        p2=os.path.splitext(p1[0])
+        path=path.with_name(p2[0]+suffix+p2[1]+p1[1]) # change file name, adding suffix
+        if self.config["mask_path"] == "derivatives":
+            bids_folder=path.parents[3]
+            match suffix:
+                case "_mask": folder="derivatives/masks"
+                case "_adjusted": folder="derivatives/adjusted"
+            path=bids_folder/folder/path.relative_to(bids_folder)
+        return path
+    
+    def saveImage(self, path, image, msg):
+        image=nib.Nifti1Image(image,self.mask_affine,self.mask_header)
         os.makedirs(path.parent,exist_ok=True) # ensure the folder exists
-        nib.save(mask,path)
-        msg=f"mask is saved successfully to:\n{path}"
+        nib.save(image,path)
+
         print(msg)
         old_msg=self.msgs[self.frame]
         self.msgs[self.frame]=msg
         # message is displayed for 10 seconds, then disappear
         Timer(10,restoreMsg,args=(self, self.frame, old_msg)).start()
+    def saveAdjustedImage(self):
+        path=getPath(self,"_adjusted")
+        image=self.data.swapaxes(self.axis,2)
+        msg=f"Adjusted image is saved successfully to:\n{path}"
+        saveImage(self,path,image,msg)
+    def saveMask(self):
+        # TODO: user may want to save individual masks for every tumor
+        path=getPath(self,"_mask")
+        image=self.getMask()
+        msg=f"mask is saved successfully to:\n{path}"
+        saveImage(self,path,image,msg)
+
 
 # avoid importing unnecessary packages in subprocesses
 os.environ["subprocess"]="1"

@@ -26,7 +26,7 @@ if not os.getenv("subprocess"): # prevent multiple pygame windows from popping u
             model=self.config['model']
             self.sam = sam_model_registry[model](checkpoint=f"checkpoints/sam_{model}.pth")
             self.algorithm=0 # serial number of algorithm, see enums.ALGORITHMS
-            self.strength=3 # denoising strength for ADJUST
+            self.strength=10 # denoising strength for ADJUST
             self.max_parallel=self.config['max_parallel']
             self.semaphore=Semaphore(self.max_parallel)
             self.isComputing=False
@@ -240,6 +240,7 @@ if not os.getenv("subprocess"): # prevent multiple pygame windows from popping u
                 self.axis=np.argmax(pixdim[1:4])
                 self.data=data.swapaxes(self.axis,2)
                 self.data_backup=self.data.copy()
+                self.data_adjusted:dict[int,np.ndarray]={} # {frame: adjustedImage}
                 self.lmt_upper=99.5 # 0 ~ 100
                 self.lmt_lower=0.5
 
@@ -340,6 +341,8 @@ if not os.getenv("subprocess"): # prevent multiple pygame windows from popping u
                 datamin, datamax=np.percentile(self.data_backup,[self.lmt_lower,self.lmt_upper])
                 self.data=np.clip(self.data_backup, datamin, datamax)
                 self.data=np.round((self.data - datamin) / (datamax - datamin) * 255).astype(np.uint8)
+                for frame,img in self.data_adjusted.items():
+                    self.data[...,frame]=img
 
             def renderSliceNumber():
                 color = "yellow"

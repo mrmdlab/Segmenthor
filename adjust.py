@@ -1,6 +1,7 @@
 import cv2 as cv
 import torch
 import numpy as np
+import os, requests
 
 import enums
 
@@ -22,7 +23,9 @@ def adjust(self):
     while not self.queue.empty():
         frame = self.queue.get()
         image = self.data[..., frame]
-        self.data[..., frame] = denoising(image, self.strength)
+        adjusted_image = denoising(image, self.strength)
+        self.data[..., frame]=adjusted_image
+        self.data_adjusted[frame]=adjusted_image
 
         self.hasParsed[frame] = enums.NOT_PARSED
         self.msgs[frame] = f"Added frame {frame+1} to the list"
@@ -31,6 +34,15 @@ def adjust(self):
         if frame == self.frame:
             self.renderSlice()
 
+def downloadModel():
+    model_path='checkpoints/drunet_gray.pth'
+    print(f"Downloading the model DRUnet ...")
+    model_url=r"https://github.com/cszn/KAIR/releases/download/v1.0/drunet_gray.pth"
+    file=requests.get(model_url)
+    os.makedirs("checkpoints",exist_ok=True)
+    with open(model_path,"wb") as f:
+        f.write(file.content)
+            
 def loadDRUnet():
     global device
     n_channels = 1                   # 1 for grayscale image
@@ -41,6 +53,8 @@ def loadDRUnet():
     from models.network_unet import UNetRes as net
     model = net(in_nc=n_channels+1, out_nc=n_channels, nc=[64, 128, 256, 512], nb=4, act_mode='R', downsample_mode="strideconv", upsample_mode="convtranspose")
     model_path='checkpoints/drunet_gray.pth'
+    if not os.path.isfile(model_path):
+        downloadModel()
     model.load_state_dict(torch.load(model_path), strict=True)
     model.eval()
     for k, v in model.named_parameters():
