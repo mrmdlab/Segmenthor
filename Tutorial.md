@@ -34,25 +34,25 @@
 - Enter to start computing image embedding of slices in the list
 
 ### hotkeys
-| hotkey      | explanation                                               |
-| ----------- | --------------------------------------------------------- |
-| A           | increase mask transparency                                |
-| D           | decrease mask transparency                                |
-| S           | change to SEGMENT Mode                                    |
-| S           | add/remove the current frame into the list                |
-| Enter       | start computing the image embedding of frames in the list |
-| Z           | change to ZOOMPAN Mode                                    |
-| Tab         | go through mask instances                                 |
-| Space       | make a new mask instance                                  |
-| Ctrl+S      | save the mask                                             |
-| Up, Down    | adjust lower limit of pixel brightness                    |
-| Left, Right | adjust upper limit of pixel brightness                    |
-| Ctrl+J      | reset image brightness                                    |
-| Ctrl+Z      | undo one control point of the current mask instance       |
-| Ctrl+C      | delete the bounding box                                   |
-| Shift+LMB   | press and hold Shift to draw a bounding box               |
-| [ and ]     | switch adjusting algorithm                                |
-| , and .     | increase or decrease adjusting strength                   |
+| hotkey      | explanation                                                |
+| ----------- | ---------------------------------------------------------- |
+| A           | increase mask transparency                                 |
+| D           | decrease mask transparency                                 |
+| S           | change to SEGMENT Mode                                     |
+| S           | add/remove the current frame into the list                 |
+| Enter       | start computing the image embedding of frames in the list  |
+| Z           | change to ZOOMPAN Mode                                     |
+| Tab         | go through mask instances                                  |
+| Space       | make a new mask instance                                   |
+| Ctrl+S      | save the mask                                              |
+| Up, Down    | adjust lower limit of pixel brightness                     |
+| Left, Right | adjust upper limit of pixel brightness                     |
+| Ctrl+J      | reset image brightness and remove the effect of adjustment |
+| Ctrl+Z      | undo one control point of the current mask instance        |
+| Ctrl+C      | delete the bounding box                                    |
+| Shift+LMB   | press and hold Shift to draw a bounding box                |
+| [ and ]     | switch adjusting algorithm                                 |
+| , and .     | increase or decrease adjusting strength                    |
 
 ## config
 ### specification

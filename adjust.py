@@ -1,7 +1,11 @@
 import cv2 as cv
+import torch
 import numpy as np
 
 import enums
+
+model=None
+device=None
 
 def adjust(self):
     # h stands for denoising strength
@@ -22,14 +26,47 @@ def adjust(self):
 
         self.hasParsed[frame] = enums.NOT_PARSED
         self.msgs[frame] = f"Added frame {frame+1} to the list"
-        print(f"Done with the adjustment of frame {frame+1}")
+        print(f"Done with the adjustment of frame {frame+1} by means of {algorithm}")
         self.list.append(frame)
         if frame == self.frame:
             self.renderSlice()
 
+def loadDRUnet():
+    global device
+    n_channels = 1                   # 1 for grayscale image
+
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    torch.cuda.empty_cache()
+
+    from models.network_unet import UNetRes as net
+    model = net(in_nc=n_channels+1, out_nc=n_channels, nc=[64, 128, 256, 512], nb=4, act_mode='R', downsample_mode="strideconv", upsample_mode="convtranspose")
+    model_path='checkpoints/drunet_gray.pth'
+    model.load_state_dict(torch.load(model_path), strict=True)
+    model.eval()
+    for k, v in model.named_parameters():
+        v.requires_grad = False
+    model = model.to(device)
+    print("DRUnet has been loaded!")
+    return model
+
+def tensor2uint(img):
+    img = img.data.squeeze().float().clamp_(0, 1).cpu().numpy()
+    return np.uint8((img*255.0).round())
+
 def DRUnet(image,h):
-    # TODO
-    pass
+    global model
+    if model is None:
+        model=loadDRUnet()
+
+    image = image[:,:,None].astype("float32")
+    image = image/255
+    image = torch.from_numpy(np.ascontiguousarray(image)).permute(2, 0, 1).float().unsqueeze(0)
+    image = torch.cat((image, torch.FloatTensor([h/255.]).repeat(1, 1, image.shape[2], image.shape[3])), dim=1)
+    image = image.to(device)
+
+    result = model(image)
+    result = tensor2uint(result)
+    return result
 
 def nlm(image, h:float):
     templateWindowSize = 7

@@ -142,6 +142,7 @@ if not os.getenv("subprocess"):
                         self.msgs[frame]=f"Computing the adjusted image of frame {frame+1}..."
                     Thread(target=adjust,args=(self,)).start()
                 self.list=[]
+
             case pygame.K_LEFTBRACKET:
                 self.algorithm-=1
                 postSwitchAlgorithm()
@@ -159,7 +160,6 @@ if not os.getenv("subprocess"):
                 self.strength+=1
                 if enums.ALGORITHMS[self.algorithm]=="GaussianBlur" and self.strength%2==0:
                     self.strength+=1
-
 
             case pygame.K_j: # Ctrl+J, reset image brightness
                 # !Fixme: reset adjustment

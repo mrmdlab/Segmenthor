@@ -25,7 +25,6 @@ if not os.getenv("subprocess"): # prevent multiple pygame windows from popping u
 
             model=self.config['model']
             self.sam = sam_model_registry[model](checkpoint=f"checkpoints/sam_{model}.pth")
-            # self.ncpu=mp.cpu_count()
             self.algorithm=0 # serial number of algorithm, see enums.ALGORITHMS
             self.strength=3 # denoising strength for ADJUST
             self.max_parallel=self.config['max_parallel']

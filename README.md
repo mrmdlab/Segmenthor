@@ -1,21 +1,24 @@
 ## todo
 
 ### IMPORTANT
+- bugfix: brightness adjustment overwrites denoising
 - Ctrl+J: reset adjustment, also change Tutorial.md
 - feature: new mode ADJUST
+    - algorithms
+        - [DRUnet](https://github.com/cszn/DPIR) (deep residual U-net) done
+        - [Gaussian blur](https://docs.opencv.org/4.x/d4/d13/tutorial_py_filtering.html) done
+        - [NLM](https://docs.opencv.org/4.8.0/d5/d69/tutorial_py_non_local_means.html) (non-local means) done
     - [ and ] to switch algorithm done
     - , and . to adjust denoising strength done
-    - allow user to compute image embedding again
-    - t, enter ADJUST mode. Also add or remove the current slice to the list
-    - the list of SEGMENT and ADJUST are the same
-    - Enter, begin computing the adjusted image
-    - display the original image side by side
-    - Shift+S, save the adjusted image
     - two new panels: strength and algorithm done
-    - algorithms
-        - [DRUnet](https://github.com/cszn/DPIR) (deep residual U-net)
-        - [Gaussian blur](https://docs.opencv.org/4.x/d4/d13/tutorial_py_filtering.html)
-        - [NLM](https://docs.opencv.org/4.8.0/d5/d69/tutorial_py_non_local_means.html) (non-local means)
+    - the list of SEGMENT and ADJUST are the same done
+    - t, enter ADJUST mode. Also add or remove the current slice to the list done
+    - Enter, begin computing the adjusted image done
+    - download checkpoint automatically
+    - Shift+S, save the adjusted image
+    - continuously adjust denoising strength
+    - allow user to compute image embedding again
+    - display the original image side by side
 - try with coroutine, multiple thread and mutiple process
 - bugfix: deal with exceptions 
     - pressing Space and doing bounding box
