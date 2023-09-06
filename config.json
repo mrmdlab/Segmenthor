@@ -1,5 +1,6 @@
 {
     "model":"vit_b",
     "mask_path":"same",
-    "max_parallel": 2
+    "max_parallel": 2,
+    "autoLoadEmbedding":true
 }

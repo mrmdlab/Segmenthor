@@ -322,6 +322,9 @@ if not os.getenv("subprocess"): # prevent multiple pygame windows from popping u
                 # First declaration of `self.loc_slice`
                 self.loc_slice: np.ndarray =(self.window_size/2-self.slc_size/2)
                 self.renderSlice(adjust=True)
+                if self.config["autoLoadEmbedding"]:
+                    hotkeys.loadImageEmbedding(self)
+                    self.renderSlice()
             else:
                 self.dispMsg("Please use a valid `.nii` or `.nii.gz` file!",offset=(0,30))          
 
@@ -340,8 +343,10 @@ if not os.getenv("subprocess"): # prevent multiple pygame windows from popping u
 
 
         def renderSlice(self, adjust=False):  
-            # when one of self.loc_slice, self.frame, self.slc_size, self.data changes
-            # you should call this function
+            '''
+            when one of self.loc_slice, self.frame, self.slc_size, self.data changes
+            you should call this function
+            '''
 
             def adjustBrightness():
                 datamin, datamax=np.percentile(self.data_backup,[self.lmt_lower,self.lmt_upper])
@@ -487,7 +492,8 @@ if not os.getenv("subprocess"): # prevent multiple pygame windows from popping u
             self.config={
                 "model":"vit_b",
                 "mask_path":"same",
-                "max_parallel": 2
+                "max_parallel": 2,
+                "autoLoadEmbedding":True
             }
             try:
                 with open("config.json") as f:

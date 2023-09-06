@@ -4,11 +4,12 @@
     - note: the previous releases were junk
 - what's new
     - improved accuracy
+    - Ctrl+Shift+S to save image embedding and it will be loaded automatically next time you open the corresponding image
+    - config: allow disabling automatic loading image embedding
 - what to expect for the next version
     - faster computation
     - segment everything and just select what you want
     - compute the image embedding in batch
-    - config option: save image embedding together with mask
     - adjust the images in batch
 
 ## Get Started
@@ -59,32 +60,32 @@
 - Shift+J to remove the effect of image adjustment for the current slice
 
 ### hotkeys
-| hotkey      | explanation                                                         |
-| ----------- | ------------------------------------------------------------------- |
-| A           | increase mask transparency                                          |
-| D           | decrease mask transparency                                          |
-| Z           | change to ZOOMPAN Mode                                              |
-| S           | change to SEGMENT Mode                                              |
-| S           | add/remove the current frame into the list                          |
-| T           | change to ADJUST Mode                                               |
-| T           | add/remove the current frame into the list                          |
-| Ctrl+T      | select all or deselect all to the list                              |
-| Enter       | start computing the image embedding of frames in the list (SEGMETN) |
-| Enter       | start computing the adjusted image of frames in the list (ADJUST)   |
-| Tab         | go through mask instances                                           |
-| Space       | make a new mask instance                                            |
-| Ctrl+S      | save the mask                                                       |
-| Shift+S     | save the adjusted image                                             |
-| Up, Down    | adjust lower limit of pixel brightness                              |
-| Left, Right | adjust upper limit of pixel brightness                              |
-| Ctrl+J      | reset image brightness and remove the effect of adjustment          |
-| Shift+J     | remove the effect of image adjustment for the current slice         |
-| Ctrl+Z      | undo one control point of the current mask instance                 |
-| Ctrl+C      | delete the bounding box                                             |
-| Shift+LMB   | press and hold Shift to draw a bounding box                         |
-| [ and ]     | switch adjusting algorithm                                          |
-| , and .     | increase or decrease adjusting strength                             |
-
+| hotkey       | explanation                                                         |
+| ------------ | ------------------------------------------------------------------- |
+| A            | increase mask transparency                                          |
+| D            | decrease mask transparency                                          |
+| Z            | change to ZOOMPAN Mode                                              |
+| S            | change to SEGMENT Mode                                              |
+| S            | add/remove the current frame into the list                          |
+| T            | change to ADJUST Mode                                               |
+| T            | add/remove the current frame into the list                          |
+| Ctrl+T       | select all or deselect all to the list                              |
+| Enter        | start computing the image embedding of frames in the list (SEGMETN) |
+| Enter        | start computing the adjusted image of frames in the list (ADJUST)   |
+| Tab          | go through mask instances                                           |
+| Space        | make a new mask instance                                            |
+| Ctrl+S       | save the mask                                                       |
+| Shift+S      | save the adjusted image                                             |
+| Ctrl+Shift+S | save the image embedding                                            |
+| Up, Down     | adjust lower limit of pixel brightness                              |
+| Left, Right  | adjust upper limit of pixel brightness                              |
+| Ctrl+J       | reset image brightness and remove the effect of adjustment          |
+| Shift+J      | remove the effect of image adjustment for the current slice         |
+| Ctrl+Z       | undo one control point of the current mask instance                 |
+| Ctrl+C       | delete the bounding box                                             |
+| Shift+LMB    | press and hold Shift to draw a bounding box                         |
+| [ and ]      | switch adjusting algorithm                                          |
+| , and .      | increase or decrease adjusting strength                             |
 ## config
 ### specification
 - model
