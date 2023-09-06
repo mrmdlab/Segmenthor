@@ -8,6 +8,7 @@ nuitka --module --output-dir=%output% ^
 --include-module=hotkeys ^
 --include-module=adjust ^
 --include-package=models ^
+--include-package=utils ^
 segmenthor.py
 ren %output%\segmenthor.*.pyd segmenthor.pyd
 del %output%\*.pyi
@@ -18,5 +19,5 @@ copy /Y Tutorial.md %output%\Tutorial.md
 copy /Y start.cmd %output%\start.cmd
 
 cd %output%
-7z a segmenthor_v0.5.0.zip *.pyd *.cmd *.md *.json *.jpg
+7z a segmenthor_v0.6.0.zip *.pyd *.cmd *.md *.json *.jpg
 cd ..

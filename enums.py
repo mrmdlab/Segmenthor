@@ -24,4 +24,4 @@ WHEEL_DOWN=5
 RED=np.array((128,0,0)).astype(np.uint8) # light red
 GREEN=np.array((0,128,0)).astype(np.uint8) # light green
 
-VERSION="v0.5.0"
+VERSION="v0.6.0"

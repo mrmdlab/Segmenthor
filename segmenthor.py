@@ -170,7 +170,7 @@ if not os.getenv("subprocess"): # prevent multiple pygame windows from popping u
                 point_labels=None
             return point_coords,point_labels
 
-        def _predict(self, point_coords, point_labels,multimask_output):
+        def _predict(self, point_coords, point_labels,mask_input,multimask_output):
             # TODO: maybe try iterative prediction?
             # TODO: hotkey C -> cycle through all predicted masks
             box=self.boxes[self.frame][self.mask_instance]
@@ -181,12 +181,15 @@ if not os.getenv("subprocess"): # prevent multiple pygame windows from popping u
                 pnt2=box.min(axis=-1)
                 box=np.concatenate((pnt1,pnt2))
                 box=box[::-1]
-            masks, scores, _ = self.predictors[self.frame].predict(point_coords,
+            masks, scores, logits = self.predictors[self.frame].predict(point_coords,
                                                                    point_labels,
                                                                    box,
-                                                                   multimask_output=multimask_output)
+                                                                   mask_input,
+                                                                   multimask_output)
             mask=masks[scores.argmax()].astype(np.uint8) # ndim=2
-            return mask,scores
+            score=scores.max()
+            logits=logits[scores.argmax()][None,...] # ndim=3
+            return mask, score, logits
 
         def previewMask(self):
             # can't do this too often. Limit at most twice per second
@@ -194,17 +197,20 @@ if not os.getenv("subprocess"): # prevent multiple pygame windows from popping u
             if now-self.last_change_time["mask_preview"]>0.5:
                 self.last_change_time["mask_preview"]=now
 
+                multimask_output=True
+                mask_input=None
                 if self.box_preview:
                     point_coords,point_labels=self.getCtrlPnts()
-                    multimask_output=True if self.get_nctrlpnts(self.mask_instance)==1 else False
+                    if self.get_nctrlpnts(self.mask_instance)!=1:
+                        multimask_output=False
+                        mask_input=self.masks[self.frame][self.mask_instance].logits
                 else:
                     pos=np.array(pygame.mouse.get_pos())
                     pos_ctrlpnts=[(pos-self.loc_slice)/self.resize_factor]
                     point_coords=np.array(pos_ctrlpnts)[:,::-1]
                     point_labels=np.array([1]*len(pos_ctrlpnts))
-                    multimask_output=True
 
-                mask,_ = self._predict(point_coords,point_labels,multimask_output)
+                mask,_,_ = self._predict(point_coords,point_labels,mask_input,multimask_output)
                 #! Fix me: preview is not working
 
                 # adapted from renderMask()
@@ -387,8 +393,8 @@ if not os.getenv("subprocess"): # prevent multiple pygame windows from popping u
                             self.surf_slc.blit(mode,point*self.resize_factor-3)
             
             def renderMask():
-                for i,mask in enumerate(self.masks[self.frame]):
-                    slc = np.repeat(mask[...,None], 3, axis=2)
+                for i,inst in enumerate(self.masks[self.frame]):
+                    slc = np.repeat(inst.mask[...,None], 3, axis=2)
                     # inactive mask: green
                     #   active mask: red
                     if self.mask_instance==i:
@@ -466,7 +472,7 @@ if not os.getenv("subprocess"): # prevent multiple pygame windows from popping u
             mask=np.zeros_like(self.data)
             for frame in self.masks:
                 for inst in self.masks[frame]:
-                    mask[:,:,frame]+=inst
+                    mask[:,:,frame]+=inst.mask
             return mask.clip(max=1).swapaxes(self.axis,2)
 
         # I'm surprised that python supports variable as default parameter for function

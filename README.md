@@ -1,6 +1,8 @@
 ## todo
 
 ### IMPORTANT
+- bugfix: when undo, the mask may not be the same as before
+- when verification fails, display a big msg in screen rather than generate a file
 - CLI to adjust all images in the BIDS folder
 - Shift+ArrowKey to adjust brightness for the current slice
 - feature: new mode ADJUST
@@ -19,10 +21,7 @@
         - cross hair
 - feature: text prompt
 - consider adjusting brightness in Almond's way
-- allow adjust brightness for only one slice
 - hotkey for reloading config
-- new mode: ADJUST
-- freeze the conda environment
 - Ctrl+Y, redo (undo the previous "undo")
 
 ### OTHERS
@@ -46,6 +45,12 @@
 - to compute the image embedding takes a long time, but to predict is very fast. Maybe GPU is necessary
 
 ## changelog
+- freeze the conda environment
+- new mode: ADJUST
+- change accordingly
+    - self.masks
+    - self._predict()
+- refactor: class MaskInstance
 - hotkey: Ctrl+T to select all or deselect all
 - brightness adjustment has no effect on slices that are after adjustment, unless Shift+J or Ctrl+J are activated
 - Ctrl+J: reset adjustment, also change Tutorial.md

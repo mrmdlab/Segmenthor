@@ -29,6 +29,7 @@ if not os.getenv("subprocess"):
     import time
 
     from adjust import adjust
+    import utils
 
     def throughSlices(self, event):
         temp = -1
@@ -187,10 +188,16 @@ if not os.getenv("subprocess"):
 
     def predictMask(self):
         point_coords,point_labels=self.getCtrlPnts()
-        multimask_output=True if self.get_nctrlpnts(self.mask_instance)==1 else False
-        predicted_mask, scores = self._predict(point_coords,point_labels,multimask_output)
-        print("mask quality: ",scores.max())
+        if self.get_nctrlpnts(self.mask_instance)==1:
+            mask_input=None
+            multimask_output=True
+        else:
+            mask_input=self.masks[self.frame][self.mask_instance].logits
+            multimask_output=False
+        predicted_mask, score, logits = self._predict(point_coords,point_labels,mask_input,multimask_output)
+        print("mask quality: ",score)
 
+        predicted_mask=utils.MaskInstance(predicted_mask,logits)
         my_masks=self.masks[self.frame]
         if len(my_masks)>self.mask_instance:
             my_masks[self.mask_instance]=predicted_mask

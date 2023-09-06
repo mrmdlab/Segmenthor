@@ -1,11 +1,15 @@
 ## Info
 - author: MRMD
-- version: 0.5.0
+- version: 0.6.0
     - note: the previous releases were junk
 - what's new
-    - press `T` to enter ADJUST mode, try denoising with Gaussian blur, Non-local means and DRUnet
+    - improved accuracy
 - what to expect for the next version
     - faster computation
+    - segment everything and just select what you want
+    - compute the image embedding in batch
+    - config option: save image embedding together with mask
+    - adjust the images in batch
 
 ## Get Started
 1. make sure your computer is connected to the Internet
