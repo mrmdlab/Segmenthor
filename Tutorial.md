@@ -7,7 +7,7 @@
     - Ctrl+Shift+S to save image embedding and it will be loaded automatically next time you open the corresponding image
     - config: allow disabling automatic loading image embedding
     - config: `lmt_upper` and `lmt_lower`
-    - precompute: command line tool for computing the embedding of all images in the BIDS folder
+    - precompute: command line tool for computing the embedding of a single NIfTI image or all anat images in a BIDS folder
 - what to expect for the next version
     - segment everything and just select what you want
     - preadjust
