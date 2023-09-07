@@ -121,7 +121,7 @@ if not os.getenv("subprocess"):
         return file.endswith(".nii.gz") or file.endswith(".nii")
 
     def init():
-        global lmt_lower, lmt_upper, q, q_result, processes, total, nframes, embedding, hasInitiated
+        global lmt_lower, lmt_upper, q, q_result, processes, total, nframes, embedding, hasInitiated, max_parallel
         if not hasInitiated:
             os.environ["subprocess"]="1"
 
@@ -132,7 +132,9 @@ if not os.getenv("subprocess"):
             q=Queue()
             q_result=Queue()
             processes=[]
-            for i in range(st.config["max_parallel"]):
+            if max_parallel == 0:
+                max_parallel = st.config["max_parallel"]
+            for i in range(max_parallel):
                 p=Process(target=computeFrame, args=(q, q_result, model))
                 processes.append(p)
                 p.start()
@@ -146,14 +148,24 @@ if not os.getenv("subprocess"):
     msg = '''
     Usage:
     precompute.cmd path
+    precompute.cmd max_parallel path
+
+    Parameters:
+    -----------
+    max_parallel, specifies how many CPU cores to use. If not specified, the value from `config.json` will be used. Otherwise, use default value 2.
 
     path must be either BIDS_folder or NIfTI file
     if path is a BIDS_folder, compute and save the embedding of all anat images in the BIDS folder
     if path is a NIfTI file, compute and save the embedding of it
     '''
-    try:
+    
+    max_parallel = 0
+    if len(sys.argv)==2:
         path = sys.argv[1]
-    except IndexError:
+    elif len(sys.argv)==3:
+        max_parallel = sys.argv[1]
+        path = sys.argv[2]
+    else:
         print(msg)
         sys.exit()
 
