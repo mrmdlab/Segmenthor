@@ -32,6 +32,8 @@ if not os.getenv("subprocess"):
 
 
     def computeBIDS(bids_path):
+        init()
+
         jobs = []
         for root, dirs, files in os.walk(bids_path):
             if os.path.basename(root)=="anat":
@@ -163,7 +165,7 @@ if not os.getenv("subprocess"):
     if len(sys.argv)==2:
         path = sys.argv[1]
     elif len(sys.argv)==3:
-        max_parallel = sys.argv[1]
+        max_parallel = int(sys.argv[1])
         path = sys.argv[2]
     else:
         print(msg)

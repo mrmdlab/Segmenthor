@@ -17,8 +17,8 @@ pip3 install ordered-set opencv-python
 git submodule update --init
 pip3 install --no-index ./segment-anything
 
-# on ACRC, you may need mesa-libGL.x86_64
-# to install it, see user-yum.sh in OneNote -> RABIES -> Haosheng
+# on ACRC
+module load mesa
 ```
 
 ## Build
