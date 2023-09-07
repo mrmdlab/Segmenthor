@@ -2,5 +2,7 @@
     "model":"vit_b",
     "mask_path":"same",
     "max_parallel": 2,
-    "autoLoadEmbedding":true
+    "autoLoadEmbedding":true,
+    "lmt_upper":99.5,
+    "lmt_lower":0.5
 }

@@ -6,11 +6,11 @@
     - improved accuracy
     - Ctrl+Shift+S to save image embedding and it will be loaded automatically next time you open the corresponding image
     - config: allow disabling automatic loading image embedding
+    - config: `lmt_upper` and `lmt_lower`
+    - precompute: command line tool for computing the embedding of all images in the BIDS folder
 - what to expect for the next version
-    - faster computation
     - segment everything and just select what you want
-    - compute the image embedding in batch
-    - adjust the images in batch
+    - preadjust
 
 ## Get Started
 1. make sure your computer is connected to the Internet
@@ -96,6 +96,12 @@
     - derivatives
     - same
 - max_parallel (positive integer)
+- autoLoadEmbedding (boolean)
+    - If true (default), Segmenthor looks for image embediing in `BIDS_folder/derivatives/embedding`
+- lmt_upper (float, 0~100)
+    - default to 99.5, automatically adjust image brightness
+- lmt_lower (float, 0~100)
+    - default to 0.5, automatically adjust image brightness
 
 ### models
 - ViT, vision transformer see [reference](http://arxiv.org/abs/2010.11929)

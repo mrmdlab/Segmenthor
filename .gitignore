@@ -5,3 +5,4 @@ dist
 __pycache__
 test.ipynb
 nuitka_help.log
+desktop.ini
