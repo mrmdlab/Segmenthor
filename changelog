@@ -1,6 +1,9 @@
 ## todo
 
 ### IMPORTANT
+- create `src` folder
+- bugfix: environment.yml not working on Linux
+- efficient multiprocessing for precompute BIDS
 - git submodule, change remote URL to gitpub
 - make sure README get started is correct
 - make sure submodule update automatically, maybe really need to commit and then `git submodule update`?

@@ -175,8 +175,8 @@ def hotkeys_keyboard(self,event):
         case pygame.K_j:
             # Ctrl+J, reset image brightness
             if pygame.key.get_mods() & pygame.KMOD_CTRL:
-                self.lmt_upper=99.5
-                self.lmt_lower=0.5
+                self.lmt_upper=self.config["lmt_upper"]
+                self.lmt_lower=self.config["lmt_lower"]
                 self.data_adjusted={}
                 self.renderSlice(adjust=True)
             # Shift+J, remove the effect of image adjustment for the current slice

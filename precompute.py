@@ -66,9 +66,7 @@ def computeFile(filepath, single_file=False):
     path=getEmbeddingPath(st)
     for frame in range(data.shape[2]):
         slc = np.repeat(data[..., frame, None], 3, axis=2)
-        predictor.set_image(slc)
-        embedding[frame]=predictor.get_image_embedding()
-        predictor.reset_image()
+        embedding[frame]=computeFrame(slc)
     os.makedirs(path.parent,exist_ok=True)
     torch.save(embedding,path)
 
@@ -77,10 +75,18 @@ def computeFile(filepath, single_file=False):
         elapsed=time.time()-single_begin
         print(f"elapsed time: {elapsed}")
 
+def computeFrame(slc):
+    predictor.set_image(slc)
+    result=predictor.get_image_embedding()
+    predictor.reset_image()
+    return result
+
 def checkNifti(file):
     return file.endswith(".nii.gz") or file.endswith(".nii")
 
 def init():
+    #! FIXME: use one st object?
+    # TODO: parallel in every frame for single NIfTI file and also BIDS
     global st, predictor, lmt_lower, lmt_upper, hasInitiated
     if not hasInitiated:
         st = SegmentThor(gui=False)
@@ -105,7 +111,7 @@ except IndexError:
     sys.exit()
 
 if os.path.isfile(path) and checkNifti(path):
-    computeFile(path,True)
+    computeFile(path,single_file=True)
 elif os.path.isdir(path):
     # TODO: checkBIDS()
     computeBIDS(path)
