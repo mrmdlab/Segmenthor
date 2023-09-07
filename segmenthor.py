@@ -18,11 +18,11 @@ class SegmentThor:
     def __init__(self,gui=True):
         self.verify()
         self.configurate()
-        model=self.config['model']
-        self.sam = sam_model_registry[model](checkpoint=f"checkpoints/sam_{model}.pth")
         if not gui:
             return
         
+        model=self.config['model']
+        self.sam = sam_model_registry[model](checkpoint=f"checkpoints/sam_{model}.pth")
         self.algorithm=0 # serial number of algorithm, see enums.ALGORITHMS
         self.strength=10 # denoising strength for ADJUST
         self.max_parallel=self.config['max_parallel']
@@ -549,5 +549,5 @@ def downloadModel(model):
         with open(model_pth,"wb") as f:
             f.write(file.content)
 
-if not os.getenv("subprocess"): # prevent opening GUI
+if not os.getenv("precompute"): # prevent opening GUI
     SegmentThor()

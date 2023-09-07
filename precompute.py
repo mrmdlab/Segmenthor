@@ -1,119 +1,166 @@
-import sys
 import os
-import numpy as np
-import nibabel as nib
-import time
-import torch
+def computeFrame(q, q_result, model):
+    def initProcess(model):
+        from segment_anything import SamPredictor, sam_model_registry
+        global predictor
+        sam = sam_model_registry[model](checkpoint=f"checkpoints/sam_{model}.pth")
+        predictor = SamPredictor(sam)
 
-os.environ["subprocess"]="1"
-from segment_anything import SamPredictor
-from segmenthor import SegmentThor
-from hotkeys import getEmbeddingPath
+    initProcess(model)
+
+    while 1:
+        filepath, frame, slc = q.get()
+        if filepath is None:
+            break
+        predictor.set_image(slc)
+        result=predictor.get_image_embedding()
+        predictor.reset_image()
+        q_result.put((filepath, frame, result))
 
 
-def computeBIDS(bids_path):
-    init()
+if not os.getenv("subprocess"):
+    import sys
+    import numpy as np
+    import nibabel as nib
+    import time
+    import torch
+    from multiprocessing import Process, Queue
 
-    jobs = []
-    for root, dirs, files in os.walk(bids_path):
-        if os.path.basename(root)=="anat":
-            for file in files:
-                if checkNifti(file):
-                    filepath = os.path.join(root, file)
-                    jobs.append((file, filepath))
+    os.environ["precompute"]="1"
+    from segmenthor import SegmentThor
+    from hotkeys import getEmbeddingPath
 
-    print("#################################")
-    print("Computing the image embedding")
-    print("#################################")
 
-    n = 0
-    njobs = len(jobs)
-    time_begin=time.time()
-    while len(jobs) > 0:
-        n += 1
-        file, filepath = jobs.pop()
-        print(f"{n}/{njobs} {file}")
-        computeFile(filepath)
+    def computeBIDS(bids_path):
+        jobs = []
+        for root, dirs, files in os.walk(bids_path):
+            if os.path.basename(root)=="anat":
+                for file in files:
+                    if checkNifti(file):
+                        filepath = os.path.join(root, file)
+                        jobs.append(filepath)
 
-    print("#################################")
-    print("Done with all the image embedding")
-    print("#################################")
+        print("#################################")
+        print("Computing the image embedding")
+        print("#################################")
 
-    minutes=round((time.time()-time_begin)/60,2)
-    speed=round(minutes/njobs,2)
-    print(f"total time: {minutes} minutes")
-    print(f"average: {speed} minutes/image")
+        global njobs
+        njobs = len(jobs)
+        time_begin=time.time()
+        for i in range(njobs):
+            filepath = jobs[i]
+            computeFile(filepath)
 
-def computeFile(filepath, single_file=False):
-    init()
+        checkResult(False)
+        beforeEnding()       
 
-    if single_file:
-        print(f"Computing the embedding of {os.path.basename(filepath)}")
-        single_begin=time.time()
+        print("#################################")
+        print("Done with all the image embedding")
+        print("#################################")
 
-    img = nib.load(filepath)
-    pixdim = img.header.get("pixdim")
-    axis = np.argmax(pixdim[1:4])
-    data = img.get_fdata()
-    data = data.swapaxes(axis, 2)
+        minutes=round((time.time()-time_begin)/60,2)
+        speed=round(minutes/njobs,2)
+        print(f"total time: {minutes} minutes")
+        print(f"average: {speed} minutes/image")
 
-    datamin, datamax = np.percentile(data, [lmt_lower, lmt_upper])
-    data = np.clip(data, datamin, datamax)
-    data = np.round((data - datamin) / (datamax - datamin) * 255).astype(np.uint8)
+    def computeFile(filepath, single_file=False):
+        if single_file:
+            print(f"Computing the embedding of {os.path.basename(filepath)}")
+            single_begin=time.time()
 
-    embedding={}
-    st.path=filepath
-    path=getEmbeddingPath(st)
-    for frame in range(data.shape[2]):
-        slc = np.repeat(data[..., frame, None], 3, axis=2)
-        embedding[frame]=computeFrame(slc)
-    os.makedirs(path.parent,exist_ok=True)
-    torch.save(embedding,path)
+        init()
 
-    if single_file:
-        print(f"Image embedding is saved successfully to\n{path}")
-        elapsed=time.time()-single_begin
-        print(f"elapsed time: {elapsed}")
+        img = nib.load(filepath)
+        pixdim = img.header.get("pixdim")
+        axis = np.argmax(pixdim[1:4])
+        data = img.get_fdata()
+        data = data.swapaxes(axis, 2)
 
-def computeFrame(slc):
-    predictor.set_image(slc)
-    result=predictor.get_image_embedding()
-    predictor.reset_image()
-    return result
+        datamin, datamax = np.percentile(data, [lmt_lower, lmt_upper])
+        data = np.clip(data, datamin, datamax)
+        data = np.round((data - datamin) / (datamax - datamin) * 255).astype(np.uint8)
 
-def checkNifti(file):
-    return file.endswith(".nii.gz") or file.endswith(".nii")
+        embedding[filepath]={}
+        global total
+        total+=data.shape[2]
+        nframes[filepath]=data.shape[2]
+        for frame in range(data.shape[2]):
+            slc = np.repeat(data[..., frame, None], 3, axis=2)
+            q.put((filepath, frame, slc))
 
-def init():
-    #! FIXME: use one st object?
-    # TODO: parallel in every frame for single NIfTI file and also BIDS
-    global st, predictor, lmt_lower, lmt_upper, hasInitiated
-    if not hasInitiated:
-        st = SegmentThor(gui=False)
-        predictor = SamPredictor(st.sam)
-        lmt_upper = st.config["lmt_upper"]
-        lmt_lower = st.config["lmt_lower"]
-        hasInitiated = True
+        if single_file:
+            checkResult(True)
+            beforeEnding()
+            print(f"Image embedding is saved successfully to\n{path}")
+            elapsed=time.time()-single_begin
+            print(f"elapsed time: {elapsed}")
 
-hasInitiated=False
-msg = '''
-Usage:
-precompute.cmd path
+    def checkResult(single_file=False):
+        global total
+        n = 0
+        while total > 0:
+            filepath, frame, result = q_result.get()
+            embedding[filepath][frame]=result
+            total-=1
+            nframes[filepath]-=1
+            if nframes[filepath] == 0:
+                path=getEmbeddingPath(filepath)
+                os.makedirs(path.parent,exist_ok=True)
+                torch.save(embedding.pop(filepath),path)
+                if not single_file:
+                    n+=1
+                    print(f"{n}/{njobs} done with {os.path.basename(filepath)}")
 
-path must be either BIDS_folder or NIfTI file
-if path is a BIDS_folder, compute and save the embedding of all anat images in the BIDS folder
-if path is a NIfTI file, compute and save the embedding of it
-'''
-try:
-    path = sys.argv[1]
-except IndexError:
-    print(msg)
-    sys.exit()
+    def beforeEnding():
+        for p in processes:
+            q.put((None,None,None)) # to terminate the subprocess
+        for p in processes:
+            p.join()
 
-if os.path.isfile(path) and checkNifti(path):
-    computeFile(path,single_file=True)
-elif os.path.isdir(path):
-    # TODO: checkBIDS()
-    computeBIDS(path)
-else:
-    print(msg)
+    def checkNifti(file):
+        return file.endswith(".nii.gz") or file.endswith(".nii")
+
+    def init():
+        global lmt_lower, lmt_upper, q, q_result, processes, total, nframes, embedding, hasInitiated
+        if not hasInitiated:
+            os.environ["subprocess"]="1"
+
+            st = SegmentThor(gui=False) # verify only once
+            lmt_lower = st.config["lmt_lower"]
+            lmt_upper = st.config["lmt_upper"]
+            model = st.config['model']
+            q=Queue()
+            q_result=Queue()
+            processes=[]
+            for i in range(st.config["max_parallel"]):
+                p=Process(target=computeFrame, args=(q, q_result, model))
+                processes.append(p)
+                p.start()
+
+            total = 0
+            nframes = {} # {filepath -> int}
+            embedding = {}
+            hasInitiated = True
+
+    hasInitiated=False
+    msg = '''
+    Usage:
+    precompute.cmd path
+
+    path must be either BIDS_folder or NIfTI file
+    if path is a BIDS_folder, compute and save the embedding of all anat images in the BIDS folder
+    if path is a NIfTI file, compute and save the embedding of it
+    '''
+    try:
+        path = sys.argv[1]
+    except IndexError:
+        print(msg)
+        sys.exit()
+
+    if os.path.isfile(path) and checkNifti(path):
+        computeFile(path,single_file=True)
+    elif os.path.isdir(path):
+        # TODO: checkBIDS()
+        computeBIDS(path)
+    else:
+        print(msg)
