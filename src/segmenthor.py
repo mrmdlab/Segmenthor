@@ -496,7 +496,7 @@ class SegmentThor:
             "lmt_lower":0.5
         }
         try:
-            with open("config.json") as f:
+            with open("../config.json") as f:
                 cfg=f.read()
                 cfg=json.loads(cfg)
                 self.config.update(cfg)
