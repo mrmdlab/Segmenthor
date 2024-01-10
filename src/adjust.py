@@ -35,11 +35,11 @@ def adjust(self):
             self.renderSlice()
 
 def downloadModel():
-    model_path='checkpoints/drunet_gray.pth'
+    model_path='../checkpoints/drunet_gray.pth'
     print(f"Downloading the model DRUnet ...")
     model_url=r"https://github.com/cszn/KAIR/releases/download/v1.0/drunet_gray.pth"
     file=requests.get(model_url)
-    os.makedirs("checkpoints",exist_ok=True)
+    os.makedirs("../checkpoints",exist_ok=True)
     with open(model_path,"wb") as f:
         f.write(file.content)
             
@@ -52,7 +52,7 @@ def loadDRUnet():
 
     from models.network_unet import UNetRes as net
     model = net(in_nc=n_channels+1, out_nc=n_channels, nc=[64, 128, 256, 512], nb=4, act_mode='R', downsample_mode="strideconv", upsample_mode="convtranspose")
-    model_path='checkpoints/drunet_gray.pth'
+    model_path='../checkpoints/drunet_gray.pth'
     if not os.path.isfile(model_path):
         downloadModel()
     model.load_state_dict(torch.load(model_path), strict=True)

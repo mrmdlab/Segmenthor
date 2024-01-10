@@ -20,7 +20,7 @@ class SegmentThor:
             return
         
         model=self.config['model']
-        self.sam = sam_model_registry[model](checkpoint=f"checkpoints/sam_{model}.pth")
+        self.sam = sam_model_registry[model](checkpoint=f"../checkpoints/sam_{model}.pth")
         self.algorithm=0 # serial number of algorithm, see enums.ALGORITHMS
         self.strength=10 # denoising strength for ADJUST
         self.max_parallel=self.config['max_parallel']
@@ -506,7 +506,7 @@ class SegmentThor:
         downloadModel(self.config["model"])
 
 def downloadModel(model):
-    model_pth=f"checkpoints/sam_{model}.pth"
+    model_pth=f"../checkpoints/sam_{model}.pth"
     if not os.path.isfile(model_pth):
         print(f"Downloading the model {model} ...")
         model_url={
@@ -515,7 +515,7 @@ def downloadModel(model):
             "vit_h":"https://dl.fbaipublicfiles.com/segment_anything/sam_vit_h_4b8939.pth"
         }
         file=requests.get(model_url[model])
-        os.makedirs("checkpoints",exist_ok=True)
+        os.makedirs("../checkpoints",exist_ok=True)
         with open(model_pth,"wb") as f:
             f.write(file.content)
 

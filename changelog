@@ -2,7 +2,6 @@
 
 ### IMPORTANT
 - Maybe windows and Linux installation can be identical
-- create `src` folder
 - bugfix: environment.yml not working on Linux
 - git submodule, change remote URL to gitpub
 - make sure README get started is correct
@@ -50,6 +49,10 @@
 - to compute the image embedding takes a long time, but to predict is very fast. Maybe GPU is necessary
 
 ## changelog
+### v0.6.1
+- create `src` folder
+- made open source under Apache 2.0 license
+
 ### v0.6.0
 - efficient multiprocessing for precompute BIDS
 - if computing image embedding takes too long, we can compute it in advance. ie. let it run overnight

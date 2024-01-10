@@ -3,7 +3,7 @@ def computeFrame(q, q_result, model):
     def initProcess(model):
         from segment_anything import SamPredictor, sam_model_registry
         global predictor
-        sam = sam_model_registry[model](checkpoint=f"checkpoints/sam_{model}.pth")
+        sam = sam_model_registry[model](checkpoint=f"../checkpoints/sam_{model}.pth")
         predictor = SamPredictor(sam)
 
     initProcess(model)

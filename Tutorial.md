@@ -1,7 +1,7 @@
 ## Info
 - author: Magnetic Resonance Methods Development
 - website: https://mrmdlab.github.io/
-- version: 0.6.0
+- version: 0.6.1
 
 ## Manual
 ### General
