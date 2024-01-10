@@ -1,6 +1,7 @@
 ## todo
 
 ### IMPORTANT
+- Maybe windows and Linux installation can be identical
 - create `src` folder
 - bugfix: environment.yml not working on Linux
 - git submodule, change remote URL to gitpub

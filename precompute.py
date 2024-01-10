@@ -127,7 +127,7 @@ if not os.getenv("subprocess"):
         if not hasInitiated:
             os.environ["subprocess"]="1"
 
-            st = SegmentThor(gui=False) # verify only once
+            st = SegmentThor(gui=False)
             lmt_lower = st.config["lmt_lower"]
             lmt_upper = st.config["lmt_upper"]
             model = st.config['model']

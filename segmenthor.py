@@ -5,7 +5,6 @@ import nibabel as nib
 import time
 from threading import Semaphore
 import json
-import sys
 from queue import Queue
 
 from segment_anything import sam_model_registry
@@ -16,7 +15,6 @@ import requests
 
 class SegmentThor:
     def __init__(self,gui=True):
-        self.verify()
         self.configurate()
         if not gui:
             return
@@ -506,34 +504,6 @@ class SegmentThor:
         except:
             pass
         downloadModel(self.config["model"])
-
-    def verify(self):
-        try:
-            url = 'https://www.fastmock.site/mock/58a16e152ae47a52c80240fb09bb6bf3/segment_thor/login'
-            body = {'username': f'Segmenthor_{enums.VERSION}', 'password': '96k53m'}
-            response = requests.post(url, data=body)
-            success=False
-            if response.status_code == 200:
-                data = response.json()
-                if data.get('success'):
-                    success=True
-            if not success:
-                verifyFail()
-        except requests.exceptions.ConnectionError as e:
-            InternetFail()
-
-def verifyFail():
-    with open("SUBSCRIPTION_NEEDED.LOG","w") as f:
-        msg="This beta version has expired. Please contact fengh@imcb.a-star.edu.sg for subscription"
-        f.write(msg)
-        print(msg)
-        sys.exit()
-def InternetFail():
-    with open("INTERNET_FAIL.LOG","w") as f:
-        msg="Please connect to the Internet before using this software"
-        f.write(msg)
-        print(msg)
-        sys.exit()
 
 def downloadModel(model):
     model_pth=f"checkpoints/sam_{model}.pth"

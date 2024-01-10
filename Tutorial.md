@@ -1,29 +1,9 @@
 ## Info
-- author: MRMD
+- author: Magnetic Resonance Methods Development
+- website: https://mrmdlab.github.io/
 - version: 0.6.0
-    - note: the previous releases were junk
-- what's new
-    - improved accuracy
-    - Ctrl+Shift+S to save image embedding and it will be loaded automatically next time you open the corresponding image
-    - config: allow disabling automatic loading image embedding
-    - config: `lmt_upper` and `lmt_lower`
-    - precompute: command line tool for computing the embedding of a single NIfTI image or all anat images in a BIDS folder
-- what to expect for the next version
-    - segment everything and just select what you want
-    - preadjust
-
-## Get Started
-1. make sure your computer is connected to the Internet
-2. decompress `runtime.zip` and `segmenthor_{version}.zip` to the same folder, so that `runtime` folder and `start.cmd` are at the same level. Inside `runtime` folder, there should be many `dll` files instead of another folder named `runtime`
-3. double click `start.cmd` to start
-4. For the first time, a model file (357MB) will be downloaded
-5. If the software fails to start, wait 10 seconds and try again
 
 ## Manual
-### reminder
-- **Disable Chinese input method, if any, before using this software**
-- This trial version will expire soon. Please contact fengh@imcb.a-star.edu.sg for subscription.
-
 ### General
 - drag a NIfTI file to the window to open it
 - up, down, left, right to adjust image brightness

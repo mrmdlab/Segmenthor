@@ -1,4 +1,4 @@
-name: pytorch
+name: segmenthor
 channels:
   - conda-forge
 dependencies:
@@ -130,4 +130,3 @@ dependencies:
       - torch==2.0.1
       - torchvision==0.15.2
       - urllib3==2.0.4
-prefix: C:\Software\anaconda3\envs\pytorch
