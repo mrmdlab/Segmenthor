@@ -1,9 +1,6 @@
 name: pytorch
 channels:
   - conda-forge
-  - main
-  - anaconda
-  - defaults
 dependencies:
   - aom=3.5.0=h63175ca_0
   - asttokens=2.2.1=pyhd8ed1ab_0

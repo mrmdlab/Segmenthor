@@ -3,7 +3,6 @@
 ### IMPORTANT
 - create `src` folder
 - bugfix: environment.yml not working on Linux
-- efficient multiprocessing for precompute BIDS
 - git submodule, change remote URL to gitpub
 - make sure README get started is correct
 - make sure submodule update automatically, maybe really need to commit and then `git submodule update`?
@@ -19,12 +18,12 @@
 - bugfix: deal with exceptions 
     - pressing Space and doing bounding box
     - change to next file before image embedding is done
-- what if press and hold LMB and goes to another slice? Need to cancel box prompt
-- optimize multiprocess, maybe try Coroutine or thread
+- what if press and hold Shift+LMB and goes to another slice? Need to cancel box prompt
 - makefile for incremental compilation
 - correct orientation, label left, right, etc
     - Fix bug: anisotropic resolution
-    - MPR rendering, multi-planar reformation
+    - Maximum Intensity Project (MIP)
+    - Multiplanar Reconstruction (MPR)
         - cross hair
 - feature: text prompt
 - consider adjusting brightness in Almond's way
@@ -51,6 +50,7 @@
 
 ## changelog
 ### v0.6.0
+- efficient multiprocessing for precompute BIDS
 - if computing image embedding takes too long, we can compute it in advance. ie. let it run overnight
     - we can even compute image embedding with Huge model
 - bugfix: editted segment-anything hasn't been included in the runtime
