@@ -2,6 +2,7 @@
 
 ### IMPORTANT
 - Maybe windows and Linux installation can be identical
+- add __init.py__ and make `src` a package so that user doesn't need to `cd src` before using precompute.py
 - bugfix: environment.yml not working on Linux
 - git submodule, change remote URL to gitpub
 - make sure README get started is correct

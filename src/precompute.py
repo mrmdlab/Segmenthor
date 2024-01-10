@@ -26,17 +26,16 @@ if not os.getenv("subprocess"):
     import torch
     from multiprocessing import Process, Queue
 
-    os.environ["precompute"]="1"
+    os.environ["precompute"] = "1"
     from segmenthor import SegmentThor
     from hotkeys import getEmbeddingPath
-
 
     def computeBIDS(bids_path):
         init()
 
         jobs = []
         for root, dirs, files in os.walk(bids_path):
-            if os.path.basename(root)=="anat":
+            if os.path.basename(root) == "anat":
                 for file in files:
                     if checkNifti(file):
                         filepath = os.path.join(root, file)
@@ -48,27 +47,27 @@ if not os.getenv("subprocess"):
 
         global njobs
         njobs = len(jobs)
-        time_begin=time.time()
+        time_begin = time.time()
         for i in range(njobs):
             filepath = jobs[i]
             computeFile(filepath)
 
         checkResult(False)
-        beforeEnding()       
+        beforeEnding()
 
         print("#################################")
         print("Done with all the image embedding")
         print("#################################")
 
-        minutes=round((time.time()-time_begin)/60,2)
-        speed=round(minutes/njobs,2)
+        minutes = round((time.time() - time_begin) / 60, 2)
+        speed = round(minutes / njobs, 2)
         print(f"total time: {minutes} minutes")
         print(f"average: {speed} minutes/image")
 
     def computeFile(filepath, single_file=False):
         if single_file:
             print(f"Computing the embedding of {os.path.basename(filepath)}")
-            single_begin=time.time()
+            single_begin = time.time()
 
         init()
 
@@ -80,12 +79,13 @@ if not os.getenv("subprocess"):
 
         datamin, datamax = np.percentile(data, [lmt_lower, lmt_upper])
         data = np.clip(data, datamin, datamax)
-        data = np.round((data - datamin) / (datamax - datamin) * 255).astype(np.uint8)
+        data = np.round(
+            (data - datamin) / (datamax - datamin) * 255).astype(np.uint8)
 
-        embedding[filepath]={}
+        embedding[filepath] = {}
         global total
-        total+=data.shape[2]
-        nframes[filepath]=data.shape[2]
+        total += data.shape[2]
+        nframes[filepath] = data.shape[2]
         for frame in range(data.shape[2]):
             slc = np.repeat(data[..., frame, None], 3, axis=2)
             q.put((filepath, frame, slc))
@@ -94,7 +94,7 @@ if not os.getenv("subprocess"):
             checkResult(True)
             beforeEnding()
             print(f"Image embedding is saved successfully to\n{path}")
-            elapsed=time.time()-single_begin
+            elapsed = time.time() - single_begin
             print(f"elapsed time: {elapsed}")
 
     def checkResult(single_file=False):
@@ -102,20 +102,21 @@ if not os.getenv("subprocess"):
         n = 0
         while total > 0:
             filepath, frame, result = q_result.get()
-            embedding[filepath][frame]=result
-            total-=1
-            nframes[filepath]-=1
+            embedding[filepath][frame] = result
+            total -= 1
+            nframes[filepath] -= 1
             if nframes[filepath] == 0:
-                path=getEmbeddingPath(filepath)
-                os.makedirs(path.parent,exist_ok=True)
-                torch.save(embedding.pop(filepath),path)
+                path = getEmbeddingPath(filepath)
+                os.makedirs(path.parent, exist_ok=True)
+                torch.save(embedding.pop(filepath), path)
                 if not single_file:
-                    n+=1
-                    print(f"{n}/{njobs} done with {os.path.basename(filepath)}")
+                    n += 1
+                    print(
+                        f"{n}/{njobs} done with {os.path.basename(filepath)}")
 
     def beforeEnding():
         for p in processes:
-            q.put((None,None,None)) # to terminate the subprocess
+            q.put((None, None, None))  # to terminate the subprocess
         for p in processes:
             p.join()
 
@@ -125,32 +126,33 @@ if not os.getenv("subprocess"):
     def init():
         global lmt_lower, lmt_upper, q, q_result, processes, total, nframes, embedding, hasInitiated, max_parallel
         if not hasInitiated:
-            os.environ["subprocess"]="1"
+            os.environ["subprocess"] = "1"
 
             st = SegmentThor(gui=False)
             lmt_lower = st.config["lmt_lower"]
             lmt_upper = st.config["lmt_upper"]
             model = st.config['model']
-            q=Queue()
-            q_result=Queue()
-            processes=[]
+            q = Queue()
+            q_result = Queue()
+            processes = []
             if max_parallel == 0:
                 max_parallel = st.config["max_parallel"]
             for i in range(max_parallel):
-                p=Process(target=computeFrame, args=(q, q_result, model))
+                p = Process(target=computeFrame, args=(q, q_result, model))
                 processes.append(p)
                 p.start()
 
             total = 0
-            nframes = {} # {filepath -> int}
+            nframes = {}  # {filepath -> int}
             embedding = {}
             hasInitiated = True
 
-    hasInitiated=False
+    hasInitiated = False
     msg = '''
     Usage:
-    precompute.cmd path
-    precompute.cmd max_parallel path
+    precompute.ps1 path
+    precompute.ps1 max_parallel path
+
 
     Parameters:
     -----------
@@ -160,11 +162,11 @@ if not os.getenv("subprocess"):
     if path is a BIDS_folder, compute and save the embedding of all anat images in the BIDS folder
     if path is a NIfTI file, compute and save the embedding of it
     '''
-    
+
     max_parallel = 0
-    if len(sys.argv)==2:
+    if len(sys.argv) == 2:
         path = sys.argv[1]
-    elif len(sys.argv)==3:
+    elif len(sys.argv) == 3:
         max_parallel = int(sys.argv[1])
         path = sys.argv[2]
     else:
@@ -172,7 +174,7 @@ if not os.getenv("subprocess"):
         sys.exit()
 
     if os.path.isfile(path) and checkNifti(path):
-        computeFile(path,single_file=True)
+        computeFile(path, single_file=True)
     elif os.path.isdir(path):
         # TODO: checkBIDS()
         computeBIDS(path)

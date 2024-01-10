@@ -2,4 +2,4 @@
 
 conda activate segmenthor
 cd src
-python segmenthor.py
+python precompute.py $args[0] $args[1]
