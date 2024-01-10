@@ -31,5 +31,8 @@ While you can select slices you're interested in and compute their embedding on 
 precompute.ps1
 ```
 
-### reminder
+## Demo
+https://mrmdlab.github.io/products/#Segmenthor
+
+## Reminder
 **Disable Chinese input method, if any, before using this software. 使用前必须禁用中文输入法**
