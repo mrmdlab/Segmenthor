@@ -1,25 +1,14 @@
 # Segmenthor
 
 ## Installation
-### Windows
-```powershell
-git clone https://github.com/mrmdlab/Segmenthor.git
-cd segmenthor
-
-conda env create -f environment.yml -n segmenthor
-conda activate segmenthor
-git submodule update --init
-pip install --no-index .\segment-anything
-```
-### Linux
 ```sh
 git clone https://github.com/mrmdlab/Segmenthor.git
 cd segmenthor
 
-conda create -n segmenthor -c conda-forge python=3 nibabel pygame
+conda create -n segmenthor -c conda-forge python=3.11 nibabel pygame
 conda activate segmenthor
-pip3 install torch torchvision --index-url https://download.pytorch.org/whl/cpu
-pip3 install ordered-set opencv-python
+pip3 install torch==2.0.1 torchvision==0.15.2 --index-url https://download.pytorch.org/whl/cpu
+pip3 install opencv-python
 git submodule update --init
 pip3 install --no-index ./segment-anything
 ```
