@@ -32,7 +32,7 @@ precompute.ps1
 ```
 
 ## Demo
-https://mrmdlab.github.io/products/#Segmenthor
+https://mrmdlab.github.io/resources/#Segmenthor
 
 ## Reminder
 **Disable Chinese input method, if any, before using this software. 使用前必须禁用中文输入法**
